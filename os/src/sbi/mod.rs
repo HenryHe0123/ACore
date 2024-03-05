@@ -1,8 +1,9 @@
+pub mod uart;
+
 use sbi_rt::{system_reset, NoReason, Shutdown, SystemFailure};
 
-pub fn console_putchar(c: usize) {
-    #[allow(deprecated)]
-    sbi_rt::legacy::console_putchar(c);
+pub fn console_putchar(c: u8) {
+    uart::uart_putchar(c);
 }
 
 pub fn shutdown(failure: bool) -> ! {

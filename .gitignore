@@ -2,3 +2,4 @@ target/
 debug/
 
 Cargo.lock
+.vscode/
