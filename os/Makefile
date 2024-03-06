@@ -8,21 +8,21 @@ ENTRY_ADDR := 0x80200000
 # ENTRY_ADDR := 0x80000000
 
 clean:
-	cargo clean
+	@cargo clean
 
-build:clean
-	cargo build --release
-	rust-objcopy --strip-all $(OS_ELF) -O binary $(OS_BIN)
+build: clean
+	@cargo build --release
+	@rust-objcopy --strip-all $(OS_ELF) -O binary $(OS_BIN)
 
-run:build
-	qemu-system-riscv64 \
+run: build
+	@qemu-system-riscv64 \
 		-machine virt \
 		-nographic \
 		-bios $(BOOTLOADER) \
 		-device loader,file=$(OS_BIN),addr=$(ENTRY_ADDR)
 
-debug:build
-	qemu-system-riscv64 \
+debug: build
+	@qemu-system-riscv64 \
 		-machine virt \
 		-nographic \
 		-bios $(BOOTLOADER) \

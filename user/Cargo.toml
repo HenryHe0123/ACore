@@ -1,0 +1,11 @@
+[package]
+name = "user_lib"
+version = "0.1.0"
+authors = ["Henry He"]
+edition = "2021"
+
+[dependencies]
+riscv = { git = "https://github.com/rcore-os/riscv", features = ["inline-asm"] } 
+
+[profile.release]
+debug = true
