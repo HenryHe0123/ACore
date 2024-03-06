@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 sbi-rt = { version = "0.0.2", features = ["legacy"] }
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 
 [profile.release]
 debug = true

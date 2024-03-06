@@ -11,6 +11,7 @@ mod console;
 use core::arch::global_asm;
 
 global_asm!(include_str!("entry.s"));
+global_asm!(include_str!("link_app.s"));
 
 #[no_mangle]
 pub fn rust_main() -> ! {
