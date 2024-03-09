@@ -3,3 +3,4 @@ debug/
 
 Cargo.lock
 .vscode/
+os/src/link_app.s

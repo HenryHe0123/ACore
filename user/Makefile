@@ -18,4 +18,6 @@ elf:
 binary: elf
 	@$(foreach elf, $(ELFS), $(OBJCOPY) $(elf) --strip-all -O binary $(patsubst $(TARGET_DIR)/%, $(TARGET_DIR)/%.bin, $(elf));)
 
-build: binary
+# build binary files under TARGET_DIR
+# e.g. target/riscv64gc-unknown-none-elf/release/00hello_world.bin
+build: binary 
