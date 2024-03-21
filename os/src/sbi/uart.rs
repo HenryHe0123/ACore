@@ -45,20 +45,3 @@ pub fn uart_getchar() -> Option<u8> {
         None
     }
 }
-
-pub fn uart_init() {
-    // disable interrupts
-    write_reg(IER, 0);
-    // set divisor latch (DLAB bit in LCR)
-    write_reg(LCR, LCR_BAUD_LATCH);
-    // LSB for baud rate of 38.4K
-    write_reg(0, 3);
-    // MSB for baud rate of 38.4K
-    write_reg(1, 0);
-    // 8 data bits, 1 stop bit, no parity
-    write_reg(LCR, LCR_EIGHT_BITS);
-    // reset and enable FIFOs
-    write_reg(FCR, FCR_FIFO_ENABLE | FCR_FIFO_CLEAR);
-    // enable receiver buffer interrupts
-    write_reg(IER, IER_RX_ENABLE);
-}

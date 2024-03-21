@@ -1,3 +1,4 @@
+pub mod timer;
 pub mod uart;
 
 pub fn console_putchar(c: u8) {

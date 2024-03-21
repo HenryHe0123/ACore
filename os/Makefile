@@ -2,10 +2,8 @@ TARGET := riscv64gc-unknown-none-elf
 OS_ELF := target/$(TARGET)/release/os
 OS_BIN := $(OS_ELF).bin
 
-BOOTLOADER := ../bootloader/rustsbi-qemu.bin
-ENTRY_ADDR := 0x80200000
-# BOOTLOADER := none
-# ENTRY_ADDR := 0x80000000
+BOOTLOADER := none
+ENTRY_ADDR := 0x80000000
 
 QEMU_ARGS := -machine virt \
 			 -nographic \

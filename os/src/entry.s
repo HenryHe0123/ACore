@@ -2,8 +2,9 @@
     .globl _start
 _start:
     la sp, boot_stack_top
-    call rust_main
+    call booting
     
+# set boot stack
     .section .bss.stack
     .globl boot_stack_bound
 boot_stack_bound:
