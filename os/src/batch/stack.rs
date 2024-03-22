@@ -1,7 +1,5 @@
+use crate::config::{KERNEL_STACK_SIZE, USER_STACK_SIZE};
 use crate::trap::TrapContext;
-
-const USER_STACK_SIZE: usize = 4096 * 2;
-const KERNEL_STACK_SIZE: usize = 4096 * 2;
 
 #[repr(align(4096))]
 pub struct KernelStack {

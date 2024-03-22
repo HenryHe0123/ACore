@@ -1,20 +1,25 @@
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
+#![feature(alloc_error_handler)]
 
-pub mod batch;
+mod batch;
+mod config;
 mod lang_items;
 mod mm;
 mod sbi;
 mod sync;
-pub mod syscall;
-pub mod trap;
+mod syscall;
+mod trap;
 
 #[macro_use]
 mod console;
 
+extern crate alloc;
+
 use crate::sbi::timer;
 use core::arch::{asm, global_asm};
+use mm::heap_allocator::{heap_test, init_heap};
 use riscv::register::{mepc, mstatus, pmpaddr0, pmpcfg0, satp};
 
 global_asm!(include_str!("entry.s"));
@@ -53,12 +58,14 @@ pub fn booting() -> ! {
 pub fn kernel_main() -> ! {
     print_init_info();
     clear_bss();
+    init_heap();
+    heap_test();
     trap::init();
     batch::init();
     batch::run_next_app();
 }
 
-pub fn print_init_info() {
+fn print_init_info() {
     info!("{}", sbi::LOGO);
     info!("[mysbi] Hello, kernel!");
 }
