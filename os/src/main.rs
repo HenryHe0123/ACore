@@ -51,11 +51,16 @@ pub fn booting() -> ! {
 
 #[no_mangle]
 pub fn kernel_main() -> ! {
-    info!("[mysbi] Hello, kernel!");
+    print_init_info();
     clear_bss();
     trap::init();
     batch::init();
     batch::run_next_app();
+}
+
+pub fn print_init_info() {
+    info!("{}", sbi::LOGO);
+    info!("[mysbi] Hello, kernel!");
 }
 
 fn clear_bss() {

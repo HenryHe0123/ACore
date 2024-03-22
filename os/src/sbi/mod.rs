@@ -14,3 +14,10 @@ pub fn shutdown(failure: bool) -> ! {
     unsafe { VIRT_TEST.write_volatile(value) };
     unreachable!()
 }
+
+pub const LOGO: &str = r" ___  ___  ____    ____  _______  ______    __  
+|   \/   | \   \  /   / /       ||   _  \  |  | 
+|  \  /  |  \   \/   / |   (----`|  |_)  | |  | 
+|  |\/|  |   \_    _/   \   \    |   _  <  |  | 
+|  |  |  |     |  | .----)   |   |  |_)  | |  | 
+|__|  |__|     |__| |_______/    |______/  |__|";
