@@ -17,6 +17,7 @@ mod console;
 
 extern crate alloc;
 
+use crate::mm::frame_allocator::*;
 use crate::sbi::timer;
 use core::arch::{asm, global_asm};
 use mm::heap_allocator::{heap_test, init_heap};
@@ -60,6 +61,8 @@ pub fn kernel_main() -> ! {
     clear_bss();
     init_heap();
     heap_test();
+    init_frame_allocator();
+    frame_allocator_test();
     trap::init();
     batch::init();
     batch::run_next_app();
