@@ -1,4 +1,5 @@
 use crate::config::{PAGE_SIZE, PAGE_SIZE_BITS};
+use crate::mm::page_table::PageTableEntry;
 
 const PA_WIDTH_SV39: usize = 56;
 const VA_WIDTH_SV39: usize = 39;
@@ -14,7 +15,7 @@ pub struct VirtAddr(pub usize);
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysPageNum(pub usize);
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VirtPageNum(pub usize);
 
 // usize <-> PhysAddr, PhysPageNum
@@ -71,9 +72,16 @@ impl PhysAddr {
     }
 }
 
-//
+// PPN
 
 impl PhysPageNum {
+    // Identical Mapping: for physical frame in memory, its ppn = vpn
+    // get the certain page in memory
+    pub fn get_pte_array(&self) -> &'static mut [PageTableEntry] {
+        let pa: PhysAddr = (*self).into();
+        unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut PageTableEntry, 512) }
+    }
+
     pub fn get_bytes_array(&self) -> &'static mut [u8] {
         let pa: PhysAddr = (*self).into();
         unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut u8, 4096) }
@@ -82,5 +90,20 @@ impl PhysPageNum {
     pub fn get_mut<T>(&self) -> &'static mut T {
         let pa: PhysAddr = (*self).into();
         unsafe { (pa.0 as *mut T).as_mut().unwrap() }
+    }
+}
+
+// VPN
+
+impl VirtPageNum {
+    /// get \[vpn\[0\], vpn\[1\], vpn\[2\]\]
+    pub fn indexes(&self) -> [usize; 3] {
+        let mut vpn = self.0;
+        let mut idx = [0usize; 3];
+        for i in (0..3).rev() {
+            idx[i] = vpn & 511;
+            vpn >>= 9;
+        }
+        idx
     }
 }
