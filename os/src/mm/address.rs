@@ -63,12 +63,23 @@ impl From<PhysPageNum> for PhysAddr {
     }
 }
 
+// methods for PA, VA
+
 impl PhysAddr {
     pub fn floor(&self) -> PhysPageNum {
         PhysPageNum(self.0 / PAGE_SIZE)
     }
     pub fn ceil(&self) -> PhysPageNum {
         PhysPageNum((self.0 + PAGE_SIZE - 1) / PAGE_SIZE)
+    }
+}
+
+impl VirtAddr {
+    pub fn floor(&self) -> VirtPageNum {
+        VirtPageNum(self.0 / PAGE_SIZE)
+    }
+    pub fn ceil(&self) -> VirtPageNum {
+        VirtPageNum((self.0 + PAGE_SIZE - 1) / PAGE_SIZE)
     }
 }
 
@@ -105,5 +116,60 @@ impl VirtPageNum {
             vpn >>= 9;
         }
         idx
+    }
+
+    /// step to next virtual page
+    pub fn step(&mut self) {
+        self.0 += 1;
+    }
+}
+
+// VPNRange & Iter
+
+#[derive(Debug, Clone, Copy)]
+pub struct VPNRange {
+    pub start: VirtPageNum,
+    pub end: VirtPageNum,
+}
+
+impl VPNRange {
+    pub fn new(start: VirtPageNum, end: VirtPageNum) -> Self {
+        assert!(start <= end, "start {:?} > end {:?}!", start, end);
+        Self { start, end }
+    }
+
+    pub fn iter(&self) -> Iter {
+        Iter {
+            cur: self.start,
+            end: self.end,
+        }
+    }
+}
+
+pub struct Iter {
+    pub cur: VirtPageNum,
+    pub end: VirtPageNum,
+}
+
+impl Iterator for Iter {
+    type Item = VirtPageNum;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cur < self.end {
+            let ret = self.cur;
+            self.cur.step();
+            Some(ret)
+        } else {
+            None
+        }
+    }
+}
+
+impl IntoIterator for VPNRange {
+    type Item = VirtPageNum;
+    type IntoIter = Iter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }

@@ -139,7 +139,14 @@ impl PageTable {
             frames: Vec::new(),
         }
     }
-    pub fn translate(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
+
+    /// Translate vpn to pte.
+    pub fn translate_to_pte(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
         self.find_pte(vpn).map(|pte| pte.clone())
+    }
+
+    /// Translate vpn to ppn.
+    pub fn translate_to_ppn(&self, vpn: VirtPageNum) -> Option<PhysPageNum> {
+        self.find_pte(vpn).map(|pte| pte.ppn())
     }
 }
