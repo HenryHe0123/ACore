@@ -6,6 +6,7 @@
 mod batch;
 mod config;
 mod lang_items;
+mod loader;
 mod mm;
 mod sbi;
 mod sync;
@@ -17,10 +18,8 @@ mod console;
 
 extern crate alloc;
 
-use crate::mm::frame_allocator::*;
-use crate::sbi::timer;
+use crate::sbi::{shutdown, timer};
 use core::arch::{asm, global_asm};
-use mm::heap_allocator::{heap_test, init_heap};
 use riscv::register::{mepc, mstatus, pmpaddr0, pmpcfg0, satp};
 
 global_asm!(include_str!("entry.s"));
@@ -59,13 +58,13 @@ pub fn booting() -> ! {
 pub fn kernel_main() -> ! {
     print_init_info();
     clear_bss();
-    init_heap();
-    heap_test();
-    init_frame_allocator();
-    frame_allocator_test();
+    mm::init();
+    info!("[kernel] Hello, MMU!");
+    mm::remap_test();
     trap::init();
-    batch::init();
-    batch::run_next_app();
+    // batch::init();
+    // batch::run_next_app();
+    shutdown(false);
 }
 
 fn print_init_info() {

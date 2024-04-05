@@ -9,7 +9,7 @@ const VPN_WIDTH_SV39: usize = VA_WIDTH_SV39 - PAGE_SIZE_BITS;
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysAddr(pub usize);
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VirtAddr(pub usize);
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
@@ -18,7 +18,7 @@ pub struct PhysPageNum(pub usize);
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VirtPageNum(pub usize);
 
-// usize <-> PhysAddr, PhysPageNum
+// usize <-> PhysAddr, PhysPageNum, VirtAddr, VirtPageNum
 
 impl From<usize> for PhysAddr {
     fn from(v: usize) -> Self {
@@ -42,6 +42,29 @@ impl From<PhysPageNum> for usize {
     }
 }
 
+impl From<usize> for VirtAddr {
+    fn from(v: usize) -> Self {
+        Self(v & ((1 << VA_WIDTH_SV39) - 1))
+    }
+}
+impl From<VirtAddr> for usize {
+    fn from(v: VirtAddr) -> Self {
+        v.0
+    }
+}
+
+impl From<usize> for VirtPageNum {
+    fn from(v: usize) -> Self {
+        Self(v & ((1 << VPN_WIDTH_SV39) - 1))
+    }
+}
+
+impl From<VirtPageNum> for usize {
+    fn from(v: VirtPageNum) -> Self {
+        v.0
+    }
+}
+
 // PhysAddr <-> PhysPageNum
 
 impl PhysAddr {
@@ -59,6 +82,27 @@ impl From<PhysAddr> for PhysPageNum {
 
 impl From<PhysPageNum> for PhysAddr {
     fn from(v: PhysPageNum) -> Self {
+        Self(v.0 << PAGE_SIZE_BITS)
+    }
+}
+
+// VirtAddr <-> VirtPageNum
+
+impl VirtAddr {
+    pub fn page_offset(&self) -> usize {
+        self.0 & (PAGE_SIZE - 1)
+    }
+}
+
+impl From<VirtAddr> for VirtPageNum {
+    fn from(v: VirtAddr) -> Self {
+        assert_eq!(v.page_offset(), 0);
+        v.floor()
+    }
+}
+
+impl From<VirtPageNum> for VirtAddr {
+    fn from(v: VirtPageNum) -> Self {
         Self(v.0 << PAGE_SIZE_BITS)
     }
 }
@@ -172,4 +216,10 @@ impl IntoIterator for VPNRange {
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct VARange {
+    pub start: VirtAddr,
+    pub end: VirtAddr,
 }

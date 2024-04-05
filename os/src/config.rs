@@ -6,3 +6,5 @@ pub const PAGE_SIZE: usize = 0x1000; // 4KB
 pub const PAGE_SIZE_BITS: usize = 12;
 
 pub const MEMORY_END: usize = 0x84000000; // 64MB
+
+pub const TRAMPOLINE: usize = usize::MAX - PAGE_SIZE + 1;

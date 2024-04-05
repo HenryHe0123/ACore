@@ -1,7 +1,7 @@
 // 16550 UART (simulated by qemu)
 #![allow(unused)]
 
-const UART0: usize = 0x10000000; // base address of the UART
+pub const UART0: usize = 0x10000000; // base address of the UART
 
 // UART control registers
 const RHR: usize = 0; // receive holding register (for input bytes)

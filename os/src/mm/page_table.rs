@@ -1,5 +1,5 @@
 use super::address::*;
-use crate::{frame_alloc, FrameTracker};
+use super::frame_allocator::*;
 use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
@@ -132,12 +132,9 @@ impl PageTable {
 }
 
 impl PageTable {
-    /// Temporarily used to get arguments from user space.
-    pub fn from_token(satp: usize) -> Self {
-        Self {
-            root_ppn: PhysPageNum::from(satp & ((1usize << 44) - 1)),
-            frames: Vec::new(),
-        }
+    /// Build satp token for self.
+    pub fn satp_token(&self) -> usize {
+        8usize << 60 | self.root_ppn.0
     }
 
     /// Translate vpn to pte.

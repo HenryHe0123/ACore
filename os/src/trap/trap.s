@@ -6,7 +6,7 @@
     ld x\n, \n*8(sp)
 .endm
 
-    .section .text
+    .section .text.trampoline
     .globl __save_trap_ctx
     .globl __restore_ctx
     .align 2
@@ -37,14 +37,33 @@ __save_trap_ctx:
     csrr t2, sscratch
     sd t2, 2*8(sp)
     # all context saved
-    # set input argument of trap_handler(cx: &mut TrapContext)
-    mv a0, sp
-    call trap_handler
+
+    # load kernel_satp into t0
+    ld t0, 34*8(sp)
+    # load trap_handler into t1
+    ld t1, 36*8(sp)
+    # set sp to kernel_sp
+    ld sp, 35*8(sp)
+    # switch to kernel space
+    csrw satp, t0
+    sfence.vma
+    # jump to trap_handler
+    jr t1
+
+    # # set input argument of trap_handler(cx: &mut TrapContext)
+    # mv a0, sp
+    # call trap_handler
 
 __restore_ctx:
+    # a0: *TrapContext in user space(Constant)
+    # a1: user space token
+    # switch to user space
+    csrw satp, a1
+    sfence.vma # flush TLB
+    csrw sscratch, a0
+
     # case1: start running app by __restore_ctx
     # case2: back to U after handling trap
-    # a0: &TrapContext
     mv sp, a0
     # now sp->kernel stack(after allocated), sscratch->user stack
     # restore sstatus/sepc/sscratch(previous sp)

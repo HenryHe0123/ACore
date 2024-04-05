@@ -1,8 +1,7 @@
 use super::address::*;
+use super::frame_allocator::*;
 use super::page_table::*;
 use crate::config::PAGE_SIZE;
-use crate::frame_alloc;
-use crate::FrameTracker;
 use alloc::collections::BTreeMap;
 use bitflags::bitflags;
 
@@ -40,6 +39,16 @@ impl MapArea {
         let end_vpn: VirtPageNum = end_va.ceil();
         Self {
             vpn_range: VPNRange::new(start_vpn, end_vpn),
+            map_type,
+            data_frames: BTreeMap::new(),
+            map_perm,
+        }
+    }
+
+    pub fn new_by_varange(va_range: VARange, map_type: MapType, map_perm: MapPermission) -> Self {
+        let vpn_range = VPNRange::new(va_range.start.floor(), va_range.end.ceil());
+        Self {
+            vpn_range,
             map_type,
             data_frames: BTreeMap::new(),
             map_perm,

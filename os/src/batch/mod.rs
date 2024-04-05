@@ -106,6 +106,9 @@ pub fn run_next_app() -> ! {
         __restore_ctx(KERNEL_STACK.push_context(TrapContext::app_init_context(
             APP_BASE_ADDRESS,
             USER_STACK.get_sp(),
+            0,
+            0,
+            0,
         )) as *const _ as usize);
     }
     unreachable!()
