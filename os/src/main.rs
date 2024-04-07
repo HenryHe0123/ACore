@@ -57,7 +57,6 @@ pub fn booting() -> ! {
 #[no_mangle]
 pub fn kernel_main() -> ! {
     print_init_info();
-    clear_bss();
     mm::init();
     info!("[kernel] Hello, MMU!");
     mm::remap_test();

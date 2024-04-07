@@ -16,7 +16,7 @@ pub fn shutdown(failure: bool) -> ! {
     if failure {
         error!("[mysbi] Error exiting OS!");
     } else {
-        info!("[mysbi] Normal shutdown...")
+        info!("[mysbi] Normal shutdown...");
     }
     unsafe { VIRT_TEST.write_volatile(TEST_PASS) };
     unreachable!()
