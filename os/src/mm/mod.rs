@@ -18,10 +18,11 @@ lazy_static! {
 }
 
 pub fn init() {
+    // heap_allocator::buddy::list::list_test();
     heap_allocator::init_heap();
-    heap_allocator::heap_test();
+    // heap_allocator::heap_test();
     frame_allocator::init_frame_allocator();
-    frame_allocator::frame_allocator_test();
+    // frame_allocator::frame_allocator_test();
     KERNEL_SPACE.exclusive_access().activate();
 }
 

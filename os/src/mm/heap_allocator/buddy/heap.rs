@@ -1,5 +1,6 @@
 use core::alloc::Layout;
 use core::cmp::{max, min};
+use core::fmt::Debug;
 use core::mem::size_of;
 use core::ptr::NonNull;
 
@@ -13,9 +14,8 @@ type List = super::list::MyInList;
 /// My alternative implementation for buddy_system_allocator::Heap
 pub struct MyHeap {
     free_list: [List; MAX_ORDER],
-    // statistics
-    user: usize,      // mem allocated to user
-    allocated: usize, // mem actually allocated
+    // statistics (for debug)
+    allocated: usize, // memory allocated
     total: usize,     // total memory
 }
 
@@ -25,7 +25,6 @@ impl MyHeap {
     pub const fn new() -> Self {
         Self {
             free_list: [List::new(); MAX_ORDER],
-            user: 0,
             allocated: 0,
             total: 0,
         }
@@ -58,7 +57,6 @@ impl MyHeap {
                 // split done, return the block
                 let res = NonNull::new(self.free_list[class].pop().unwrap() as *mut u8);
                 if let Some(res) = res {
-                    self.user += layout.size();
                     self.allocated += size;
                     return Ok(res);
                 } else {
@@ -96,7 +94,6 @@ impl MyHeap {
             }
         }
 
-        self.user -= layout.size();
         self.allocated -= size;
     }
 }
@@ -121,6 +118,16 @@ impl MyHeap {
         }
     }
 }
+
+impl Debug for MyHeap {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Heap")
+            .field("allocated", &self.allocated)
+            .field("total", &self.total)
+            .finish()
+    }
+}
+
 pub trait MyNum {
     /// Returns the largest power of two that divides `self`.
     ///
