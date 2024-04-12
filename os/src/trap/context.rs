@@ -9,9 +9,9 @@ pub struct TrapContext {
     /// CSR sepc, exception program counter
     pub sepc: usize,
     // ----------------------------
-    // won't be modified after init 
+    // won't be modified after init
     pub kernel_satp: usize,
-    pub kernel_sp: usize,
+    pub kernel_sp: usize, // kernel stack (for this app) pointer
     pub trap_handler: usize,
 }
 

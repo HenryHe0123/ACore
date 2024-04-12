@@ -11,7 +11,7 @@ use riscv::register::{
     stval, stvec,
 };
 
-global_asm!(include_str!("trap.s"));
+global_asm!(include_str!("trampoline.s"));
 
 /// init stvec (trap handler entry)
 pub fn init() {
