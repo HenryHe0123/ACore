@@ -11,6 +11,7 @@ mod mm;
 mod sbi;
 mod sync;
 mod syscall;
+mod task;
 mod trap;
 
 #[macro_use]

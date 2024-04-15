@@ -1,9 +1,20 @@
 use crate::api::*;
 use core::fmt::{self, Write};
 
-struct Stdout;
-
+const STDIN: usize = 0;
 const STDOUT: usize = 1;
+
+pub extern "C" fn getchar() -> u8 {
+    let mut buf: [u8; 1] = [0; 1];
+    read(STDIN, &mut buf);
+    buf[0]
+}
+
+pub extern "C" fn putchar(c: u8) {
+    write(STDOUT, &[c]);
+}
+
+struct Stdout;
 
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {

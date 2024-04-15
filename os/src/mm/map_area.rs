@@ -22,7 +22,7 @@ pub enum MapType {
 
 /// VM area (RAII)
 pub struct MapArea {
-    vpn_range: VPNRange,
+    pub vpn_range: VPNRange,
     map_type: MapType,
     data_frames: BTreeMap<VirtPageNum, FrameTracker>,
     map_perm: MapPermission,
