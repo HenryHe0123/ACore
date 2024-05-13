@@ -1,7 +1,7 @@
 pub mod heap;
 pub mod list;
 
-use crate::sync::up::UPSafeCell;
+use crate::UPSafeCell;
 use core::alloc::{GlobalAlloc, Layout};
 use core::cell::RefMut;
 use core::ptr::{null_mut, NonNull};

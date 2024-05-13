@@ -1,6 +1,6 @@
 use super::address::PhysPageNum;
 use crate::debug;
-use crate::{config::MEMORY_END, mm::address::PhysAddr, sync::up::UPSafeCell};
+use crate::{config::MEMORY_END, mm::address::PhysAddr, UPSafeCell};
 use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 use lazy_static::lazy_static;

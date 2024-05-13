@@ -1,4 +1,5 @@
 use crate::mm::address::*;
+use crate::sbi::timer::CLINT;
 use crate::sbi::uart::UART0;
 
 pub const VIRT_TEST: usize = 0x10_0000;
@@ -13,4 +14,9 @@ const UART_MMIO: VARange = VARange {
     end: VirtAddr(UART0 + 0x9000),
 };
 
-pub const MMIO: [VARange; 2] = [VIRT_MMIO, UART_MMIO];
+const CLINT_MMIO: VARange = VARange {
+    start: VirtAddr(CLINT),
+    end: VirtAddr(CLINT + 0x10000),
+};
+
+pub const MMIO: [VARange; 3] = [VIRT_MMIO, UART_MMIO, CLINT_MMIO];

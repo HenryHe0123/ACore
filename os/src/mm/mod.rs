@@ -6,7 +6,7 @@ pub mod memory_set;
 pub mod page_table;
 
 use crate::debug;
-use crate::sync::up::UPSafeCell;
+use crate::UPSafeCell;
 use address::VirtAddr;
 use alloc::sync::Arc;
 use lazy_static::lazy_static;
