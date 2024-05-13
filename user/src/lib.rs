@@ -2,14 +2,14 @@
 #![feature(linkage)]
 #![feature(panic_info_message)]
 
-mod syscall;
 pub mod api;
 mod lang_items;
+mod syscall;
 
 #[macro_use]
 pub mod console;
 
-use api::exit;
+pub use api::*;
 
 #[no_mangle]
 #[link_section = ".text.entry"]

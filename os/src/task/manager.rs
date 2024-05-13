@@ -1,19 +1,25 @@
 use super::{TaskContext, TaskControlBlock, TaskStatus};
+use crate::info;
+use crate::loader::*;
 use crate::task::switch::__switch;
 use crate::UPSafeCell;
-use lazy_static::lazy_static;
+use alloc::vec::Vec;
 
+/// where all the tasks are managed
 pub struct TaskManager {
+    /// total number of tasks
     num_app: usize,
     inner: UPSafeCell<TaskManagerInner>,
 }
 
-const MAX_APP_NUM: usize = 16;
-
 struct TaskManagerInner {
-    tasks: [TaskControlBlock; MAX_APP_NUM],
+    /// task list
+    tasks: Vec<TaskControlBlock>,
+    /// index of current `Running` task
     current_task: usize,
 }
+
+// run_first_task & init ----------------------------
 
 impl TaskManager {
     pub fn run_first_task(&self) -> ! {
@@ -29,29 +35,43 @@ impl TaskManager {
         }
         panic!("Unreachable in run_first_task!");
     }
-}
 
-/*
-lazy_static! {
-    pub static ref TASK_MANAGER: TaskManager = {
+    pub fn init() -> Self {
+        info!("[kernel] init TASK_MANAGER");
         let num_app = get_num_app();
-        let mut tasks = [TaskControlBlock {
-            task_cx: TaskContext::zero_init(),
-            task_status: TaskStatus::UnInit,
-        }; MAX_APP_NUM];
+        info!("[kernel] num_app = {}", num_app);
+        let mut tasks: Vec<TaskControlBlock> = Vec::new();
         for i in 0..num_app {
-            tasks[i].task_cx = TaskContext::goto_restore(init_app_cx(i));
-            tasks[i].task_status = TaskStatus::Ready;
+            tasks.push(TaskControlBlock::new(get_app_data(i), i));
         }
         TaskManager {
             num_app,
-            inner: unsafe {
-                UPSafeCell::new(TaskManagerInner {
-                    tasks,
-                    current_task: 0,
-                })
-            },
+            inner: UPSafeCell::new(TaskManagerInner {
+                tasks,
+                current_task: 0,
+            }),
         }
-    };
+    }
 }
-*/
+
+// other methods ------------------------------------
+
+impl TaskManager {
+    /// Change the status of current `Running` task into `Ready`.
+    pub fn mark_current_suspended(&self) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].task_status = TaskStatus::Ready;
+    }
+
+    /// Change the status of current `Running` task into `Exited`.
+    pub fn mark_current_exited(&self) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].task_status = TaskStatus::Exited;
+    }
+
+    pub fn run_next_task(&self) {
+        unimplemented!()
+    }
+}

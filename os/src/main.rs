@@ -63,8 +63,8 @@ pub fn kernel_main() -> ! {
     info!("[kernel] Hello, MMU!");
     mm::remap_test();
     trap::init();
-    // batch::init();
-    // batch::run_next_app();
+    timer::set_next_trigger();
+    task::run_first_task();
     shutdown(false);
 }
 

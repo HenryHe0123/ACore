@@ -1,3 +1,5 @@
+//! Loading user applications into memory
+
 extern "C" {
     fn _num_app();
 }
@@ -7,7 +9,7 @@ pub fn get_num_app() -> usize {
     unsafe { (_num_app as usize as *const usize).read_volatile() }
 }
 
-/// ELF format
+/// in ELF format
 pub fn get_app_data(app_id: usize) -> &'static [u8] {
     let num_app_ptr = _num_app as usize as *const usize;
     let num_app = get_num_app();

@@ -12,7 +12,7 @@ OBJCOPY := rust-objcopy --binary-architecture=riscv64
 clean:
 	@cargo clean
 
-elf:
+elf: $(APPS)
 	@cargo build --release
 
 binary: elf
@@ -20,4 +20,6 @@ binary: elf
 
 # build binary files under TARGET_DIR
 # e.g. target/riscv64gc-unknown-none-elf/release/00hello_world.bin
-build: binary 
+build: binary
+
+.PHONY: clean elf binary build
