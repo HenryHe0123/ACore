@@ -5,8 +5,7 @@ use crate::mm::address::*;
 use crate::mm::map_area::MapPermission;
 use crate::mm::memory_set::MemorySet;
 use crate::mm::KERNEL_SPACE;
-use crate::trap::trap_handler;
-use crate::trap::TrapContext;
+use crate::trap::*;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum TaskStatus {
@@ -21,7 +20,6 @@ pub struct TaskControlBlock {
     pub task_cx: TaskContext,
     pub memory_set: MemorySet,
     pub trap_cx_ppn: PhysPageNum,
-    pub base_size: usize,
 }
 
 impl TaskControlBlock {
@@ -32,21 +30,19 @@ impl TaskControlBlock {
         let trap_cx_ppn = memory_set
             .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();
-        let task_status = TaskStatus::Ready;
-        // map a kernel-stack in kernel space
+        // 在内核地址空间创建kernel stack映射
         let (kernel_stack_bottom, kernel_stack_top) = kernel_stack_position(app_id);
         KERNEL_SPACE.exclusive_access().insert_empty_framed_area(
             kernel_stack_bottom.into(),
             kernel_stack_top.into(),
             MapPermission::R | MapPermission::W,
         );
-        //
+        // init task control block
         let task_control_block = Self {
-            task_status,
-            task_cx: TaskContext::empty(), // todo: goto_trap_return(kernel_stack_top),
+            task_status: TaskStatus::Ready,
+            task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
             memory_set,
             trap_cx_ppn,
-            base_size: user_sp,
         };
         // prepare TrapContext in user space
         let trap_cx = task_control_block.get_trap_cx();

@@ -89,6 +89,7 @@ pub fn trap_handler() -> ! {
     trap_return()
 }
 
+/// jump to `__restore_ctx` while passing `trap_cx_ptr` and `user_satp`
 pub fn trap_return() -> ! {
     // reset stvec to __save_trap_ctx
     set_user_trap_entry();

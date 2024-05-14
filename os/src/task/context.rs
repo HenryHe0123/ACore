@@ -1,7 +1,9 @@
+//! Implementation of [`TaskContext`]
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct TaskContext {
-    /// return address ( e.g. __restore ) of __switch ASM function
+    /// return address (e.g. __restore_ctx) of __switch ASM function
     ra: usize,
     /// kernel stack pointer of app
     sp: usize,
