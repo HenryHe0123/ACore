@@ -1,7 +1,9 @@
 use super::{TaskContext, TaskControlBlock, TaskStatus};
 use crate::info;
 use crate::loader::*;
+use crate::shutdown;
 use crate::task::switch::__switch;
+use crate::trap::TrapContext;
 use crate::UPSafeCell;
 use alloc::vec::Vec;
 
@@ -72,6 +74,44 @@ impl TaskManager {
     }
 
     pub fn run_next_task(&self) {
-        unimplemented!()
+        if let Some(next) = self.find_next_task() {
+            let mut inner = self.inner.exclusive_access();
+            let current = inner.current_task;
+            inner.tasks[next].task_status = TaskStatus::Running;
+            inner.current_task = next;
+            let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
+            let next_task_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
+            drop(inner);
+            // before __switch, we should drop local variables manually to release the resources
+            unsafe {
+                __switch(current_task_cx_ptr, next_task_cx_ptr);
+            }
+            // go back to user mode
+        } else {
+            info!("[kernel] All applications completed!");
+            shutdown(false);
+        }
+    }
+
+    /// Find next task to run and return task id.
+    fn find_next_task(&self) -> Option<usize> {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        // find the first `Ready` task in task list.
+        (current + 1..current + self.num_app + 1)
+            .map(|id| id % self.num_app)
+            .find(|id| inner.tasks[*id].task_status == TaskStatus::Ready)
+    }
+
+    pub fn get_current_trap_cx(&self) -> &'static mut TrapContext {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].get_trap_cx()
+    }
+
+    pub fn get_current_token(&self) -> usize {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].get_user_token()
     }
 }

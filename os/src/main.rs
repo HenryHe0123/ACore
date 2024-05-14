@@ -3,7 +3,6 @@
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
 
-mod batch;
 mod config;
 mod lang_items;
 mod loader;
@@ -65,7 +64,7 @@ pub fn kernel_main() -> ! {
     trap::init();
     timer::set_next_trigger();
     task::run_first_task();
-    shutdown(false);
+    unreachable!()
 }
 
 fn print_init_info() {

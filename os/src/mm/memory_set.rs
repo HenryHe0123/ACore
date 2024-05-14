@@ -14,6 +14,22 @@ pub struct MemorySet {
 }
 
 impl MemorySet {
+    pub fn translate_to_ppn(&self, vpn: VirtPageNum) -> Option<PhysPageNum> {
+        self.page_table.translate_to_ppn(vpn)
+    }
+
+    pub fn translate_to_pte(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
+        self.page_table.translate_to_pte(vpn)
+    }
+
+    pub fn satp_token(&self) -> usize {
+        self.page_table.satp_token()
+    }
+}
+
+// --------------------------- MemorySet construct methods --------------------------------
+
+impl MemorySet {
     /// Create a new address space.
     pub fn new_bare() -> Self {
         Self {

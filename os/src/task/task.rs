@@ -1,6 +1,12 @@
 use super::TaskContext;
-use crate::mm::address::PhysPageNum;
+use crate::config::kernel_stack_position;
+use crate::config::TRAP_CONTEXT;
+use crate::mm::address::*;
+use crate::mm::map_area::MapPermission;
 use crate::mm::memory_set::MemorySet;
+use crate::mm::KERNEL_SPACE;
+use crate::trap::trap_handler;
+use crate::trap::TrapContext;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum TaskStatus {
@@ -20,6 +26,45 @@ pub struct TaskControlBlock {
 
 impl TaskControlBlock {
     pub fn new(elf_data: &[u8], app_id: usize) -> Self {
-        unimplemented!()
+        // 从elf文件中解析出内存布局
+        let (memory_set, user_sp, entry_point) = MemorySet::new_from_elf(elf_data);
+        // 获取trap_context的物理页号
+        let trap_cx_ppn = memory_set
+            .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
+            .unwrap();
+        let task_status = TaskStatus::Ready;
+        // map a kernel-stack in kernel space
+        let (kernel_stack_bottom, kernel_stack_top) = kernel_stack_position(app_id);
+        KERNEL_SPACE.exclusive_access().insert_empty_framed_area(
+            kernel_stack_bottom.into(),
+            kernel_stack_top.into(),
+            MapPermission::R | MapPermission::W,
+        );
+        //
+        let task_control_block = Self {
+            task_status,
+            task_cx: TaskContext::empty(), // todo: goto_trap_return(kernel_stack_top),
+            memory_set,
+            trap_cx_ppn,
+            base_size: user_sp,
+        };
+        // prepare TrapContext in user space
+        let trap_cx = task_control_block.get_trap_cx();
+        *trap_cx = TrapContext::app_init_context(
+            entry_point,
+            user_sp,
+            KERNEL_SPACE.exclusive_access().satp_token(),
+            kernel_stack_top,
+            trap_handler as usize,
+        );
+        task_control_block
+    }
+
+    pub fn get_trap_cx(&self) -> &'static mut TrapContext {
+        self.trap_cx_ppn.get_mut()
+    }
+
+    pub fn get_user_token(&self) -> usize {
+        self.memory_set.satp_token()
     }
 }

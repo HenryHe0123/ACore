@@ -8,5 +8,12 @@ pub const PAGE_SIZE_BITS: usize = 12;
 pub const MEMORY_END: usize = 0x84000000; // 64MB
 
 pub const TRAMPOLINE: usize = usize::MAX - PAGE_SIZE + 1;
+pub const TRAP_CONTEXT: usize = TRAMPOLINE - PAGE_SIZE;
 
 pub const CLOCK_FREQ: usize = 12500000; // 12.5MHz
+
+pub fn kernel_stack_position(app_id: usize) -> (usize, usize) {
+    let top = TRAMPOLINE - app_id * (KERNEL_STACK_SIZE + PAGE_SIZE);
+    let bottom = top - KERNEL_STACK_SIZE;
+    (bottom, top)
+}

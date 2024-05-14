@@ -1,3 +1,5 @@
+//! Implementation of [`TrapContext`]
+
 use riscv::register::sstatus::{self, Sstatus, SPP};
 
 #[repr(C)]
@@ -8,10 +10,12 @@ pub struct TrapContext {
     pub sstatus: Sstatus,
     /// CSR sepc, exception program counter
     pub sepc: usize,
-    // ----------------------------
-    // won't be modified after init
+    // ------------------------- won't be modified after init ----------------------------
+    /// Addr of Page Table
     pub kernel_satp: usize,
-    pub kernel_sp: usize, // kernel stack (for this app) pointer
+    /// kernel stack pointer
+    pub kernel_sp: usize,
+    /// Addr of trap_handler function
     pub trap_handler: usize,
 }
 
