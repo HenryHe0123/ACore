@@ -2,6 +2,8 @@
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
+#![feature(asm_const)]
+#![feature(naked_functions)]
 
 mod config;
 mod lang_items;
@@ -40,7 +42,7 @@ pub fn booting() -> ! {
         // delegate all interrupt and exception to supervisor
         asm!("csrw mideleg, {}", in(reg) !0);
         asm!("csrw medeleg, {}", in(reg) !0);
-        // enable all interrupt
+        // enable all supervisor interrupt
         asm!("csrw sie, {}", in(reg) 0x222);
 
         // physical memory protection
@@ -60,9 +62,7 @@ pub fn kernel_main() -> ! {
     print_init_info();
     mm::init();
     info!("[kernel] Hello, MMU!");
-    mm::remap_test();
     trap::init();
-    timer::set_next_trigger();
     task::run_first_task();
     unreachable!()
 }

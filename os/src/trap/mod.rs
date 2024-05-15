@@ -10,14 +10,13 @@ use crate::asm;
 use crate::config::*;
 use crate::syscall::syscall;
 use crate::task::*;
-use crate::timer::set_next_trigger;
 use crate::warn;
 pub use context::TrapContext;
 use core::arch::global_asm;
 use riscv::register::{
     mtvec::TrapMode,
     scause::{self, Exception, Interrupt, Trap},
-    stval, stvec,
+    sip, stval, stvec,
 };
 
 global_asm!(include_str!("trampoline.s"));
@@ -76,7 +75,14 @@ pub fn trap_handler() -> ! {
             exit_current_and_run_next();
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
-            set_next_trigger();
+            panic!("A strange supervisor timer interrupt occurs! Are you using rustsbi?");
+            // set_next_trigger();
+            // suspend_current_and_run_next();
+        }
+        Trap::Interrupt(Interrupt::SupervisorSoft) => {
+            // handle machine timer interrupt delegated from mtvec (timervec)
+            let bits = sip::read().bits() & !2; // clear ssip
+            unsafe { asm!("csrw sip, {ssip}", ssip = in(reg) bits) };
             suspend_current_and_run_next();
         }
         _ => {
