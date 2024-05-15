@@ -19,13 +19,13 @@ pub fn init() {
         // set initial trigger
         set_next_trigger();
 
-        // todo: set mtvec
+        // set mtvec (m-mode trap handler)
         // mtvec::write(0, mtvec::TrapMode::Direct);
 
         // enable m-mode interrupts
         mstatus::set_mie();
         // enable timer interrupt
-        mie::set_mtimer();
+        // mie::set_mtimer();
     }
 }
 

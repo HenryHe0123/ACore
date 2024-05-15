@@ -27,15 +27,16 @@ extern "C" {
     fn __restore_ctx();
 }
 
+/// init stvec (in kernel)
+pub fn init() {
+    set_kernel_trap_entry();
+}
+
+/// set (s-mode) trap handler entry
 fn set_stvec(addr: usize) {
     unsafe {
         stvec::write(addr, TrapMode::Direct);
     }
-}
-
-/// init stvec (trap handler entry)
-pub fn init() {
-    set_stvec(__save_trap_ctx as usize);
 }
 
 fn set_kernel_trap_entry() {
@@ -96,6 +97,7 @@ pub fn trap_return() -> ! {
     // prepare for __restore_ctx
     let trap_cx_ptr = TRAP_CONTEXT;
     let user_satp = get_current_user_token();
+    // crate::debug!("user token: {:#x}", user_satp);
     // compute the virtual address of __restore_ctx
     let restore_va = __restore_ctx as usize - __save_trap_ctx as usize + TRAMPOLINE;
     // jump to __restore_ctx

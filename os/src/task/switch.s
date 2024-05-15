@@ -36,4 +36,4 @@ __switch:
     # restore kernel stack of next task
     ld sp, 8(a1)
 
-    ret                    # 返回，此时CPU的执行上下文已切换到下一个任务
+    ret                    # 返回，内核将会跳转到 trap_return
