@@ -64,7 +64,7 @@ pub fn kernel_main() -> ! {
     info!("[kernel] Hello, MMU!");
     trap::init();
     loader::list_apps();
-    task::run_first_task();
+    task::run_tasks();
     unreachable!()
 }
 

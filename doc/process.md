@@ -20,12 +20,10 @@
   - 用户空间
   - 该进程的父进程
   - 该进程的子进程
+  - 退出码
 
 `TaskStruct`存储在堆中，可通过`Arc`或`Weak`访问。
-- `Arc<TaskStruct>`。
-- `TaskStruct {inner : Mutex<RefCell<TaskStructInner>>}` 或 `TaskStruct {inner : UPSafeCell<TaskStructInner>}}`。
-- `Mutex`或`UPSafeCell`：为`Arc`提供`Sync`特性。
-- `RefCell`：提供内部可变性。
+- `inner : UPSafeCell<TaskStructInner>`
 
 ### 任务管理
 - **`TaskManager`**：管理所有任务（准备运行的任务）。
@@ -41,7 +39,7 @@
 
 ### 用户程序
 - **`initproc`**：初始化进程。
-- **`user_shell`**：用户shell。
+- **`shell`**：用户shell。
 
 ### 进程系统调用
 - **`sys_fork()`**：复制当前任务。

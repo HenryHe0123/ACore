@@ -68,11 +68,13 @@ pub fn trap_handler() -> ! {
         | Trap::Exception(Exception::LoadFault)
         | Trap::Exception(Exception::LoadPageFault) => {
             warn!("[kernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.", stval, cx.sepc);
-            exit_current_and_run_next();
+            // page fault exit code = -2
+            exit_current_and_run_next(-2);
         }
         Trap::Exception(Exception::IllegalInstruction) => {
             warn!("[kernel] IllegalInstruction in application, kernel killed it.");
-            exit_current_and_run_next();
+            // illegal instruction exit code = -3
+            exit_current_and_run_next(-3);
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
             panic!("A strange supervisor timer interrupt occurs! Are you using rustsbi?");

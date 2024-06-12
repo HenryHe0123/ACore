@@ -1,51 +1,68 @@
 use super::TaskContext;
-use crate::config::kernel_stack_position;
 use crate::config::TRAP_CONTEXT;
 use crate::mm::address::*;
-use crate::mm::map_area::MapPermission;
 use crate::mm::memory_set::MemorySet;
 use crate::mm::KERNEL_SPACE;
+use crate::task::kernel_stack::KernelStack;
+use crate::task::pid::*;
 use crate::trap::*;
+use crate::UPSafeCell;
+use alloc::sync::Arc;
+use alloc::sync::Weak;
+use alloc::vec::Vec;
+use core::cell::RefMut;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum TaskStatus {
-    UnInit,  // 未初始化
-    Ready,   // 准备运行
-    Running, // 正在运行
-    Exited,  // 已退出
+    Ready,
+    Running,
+    Zombie,
 }
 
 pub struct TaskControlBlock {
-    pub task_status: TaskStatus,
-    pub task_cx: TaskContext,
-    pub memory_set: MemorySet,
-    pub trap_cx_ppn: PhysPageNum,
+    // immutable
+    pub pid: Pid,
+    pub kernel_stack: KernelStack,
+    // mutable
+    inner: UPSafeCell<TaskControlBlockInner>,
 }
 
 impl TaskControlBlock {
-    pub fn new(elf_data: &[u8], app_id: usize) -> Self {
+    pub fn inner_exclusive_access(&self) -> RefMut<'_, TaskControlBlockInner> {
+        self.inner.exclusive_access()
+    }
+
+    pub fn getpid(&self) -> usize {
+        self.pid.0
+    }
+
+    pub fn new(elf_data: &[u8]) -> Self {
         // 从elf文件中解析出内存布局
         let (memory_set, user_sp, entry_point) = MemorySet::new_from_elf(elf_data);
         // 获取trap_context的物理页号
         let trap_cx_ppn = memory_set
             .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();
-        // 在内核地址空间创建kernel stack映射
-        let (kernel_stack_bottom, kernel_stack_top) = kernel_stack_position(app_id);
-        KERNEL_SPACE.exclusive_access().insert_empty_framed_area(
-            kernel_stack_bottom.into(),
-            kernel_stack_top.into(),
-            MapPermission::R | MapPermission::W,
-        );
-        // init task control block
+        // 分配 pid 和 kernel stack
+        let pid = pid_alloc();
+        let kernel_stack = KernelStack::new(&pid);
+        let kernel_stack_top = kernel_stack.get_top();
+        // push a task context which goes to trap_return to the top of kernel stack
         let task_control_block = Self {
-            task_status: TaskStatus::Ready,
-            task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
-            memory_set,
-            trap_cx_ppn,
+            pid,
+            kernel_stack,
+            inner: UPSafeCell::new(TaskControlBlockInner {
+                trap_cx_ppn,
+                task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
+                task_status: TaskStatus::Ready,
+                memory_set,
+                parent: None,
+                children: Vec::new(),
+                exit_code: 0,
+            }),
         };
-        // prepare TrapContext in user space
-        let trap_cx = task_control_block.get_trap_cx();
+        // prepare Trap Context in user space
+        let trap_cx = task_control_block.inner_exclusive_access().get_trap_cx();
         *trap_cx = TrapContext::app_init_context(
             entry_point,
             user_sp,
@@ -55,12 +72,42 @@ impl TaskControlBlock {
         );
         task_control_block
     }
+}
 
+pub struct TaskControlBlockInner {
+    pub task_status: TaskStatus,
+    pub task_cx: TaskContext,
+    pub memory_set: MemorySet,
+    pub trap_cx_ppn: PhysPageNum,
+    pub parent: Option<Weak<TaskControlBlock>>,
+    pub children: Vec<Arc<TaskControlBlock>>,
+    pub exit_code: i32,
+}
+
+impl TaskControlBlockInner {
     pub fn get_trap_cx(&self) -> &'static mut TrapContext {
         self.trap_cx_ppn.get_mut()
     }
 
     pub fn get_user_token(&self) -> usize {
         self.memory_set.satp_token()
+    }
+
+    pub fn is_zombie(&self) -> bool {
+        self.task_status == TaskStatus::Zombie
+    }
+
+    pub fn get_task_cx_ptr(&mut self) -> *mut TaskContext {
+        &mut self.task_cx
+    }
+}
+
+impl TaskControlBlock {
+    pub fn fork(self: &Arc<TaskControlBlock>) -> Arc<TaskControlBlock> {
+        unimplemented!()
+    }
+
+    pub fn exec(&self, elf_data: &[u8]) {
+        unimplemented!()
     }
 }
