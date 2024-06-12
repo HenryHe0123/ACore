@@ -63,6 +63,7 @@ pub fn kernel_main() -> ! {
     mm::init();
     info!("[kernel] Hello, MMU!");
     trap::init();
+    loader::list_apps();
     task::run_first_task();
     unreachable!()
 }
