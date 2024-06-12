@@ -27,6 +27,21 @@ impl MemorySet {
     }
 }
 
+impl MemorySet {
+    /// Remove `MapArea` that starts with `start_vpn`
+    pub fn remove_area_with_start_vpn(&mut self, start_vpn: VirtPageNum) {
+        if let Some((idx, area)) = self
+            .areas
+            .iter_mut()
+            .enumerate()
+            .find(|(_, area)| area.vpn_range.start == start_vpn)
+        {
+            area.unmap_to(&mut self.page_table);
+            self.areas.remove(idx);
+        }
+    }
+}
+
 // --------------------------- MemorySet construct methods --------------------------------
 
 impl MemorySet {

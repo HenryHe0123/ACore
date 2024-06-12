@@ -1,5 +1,7 @@
 mod context;
+mod kernel_stack;
 mod manager;
+mod pid;
 mod switch;
 mod task;
 

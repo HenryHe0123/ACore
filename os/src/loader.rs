@@ -66,5 +66,5 @@ pub fn list_apps() {
     for app in APP_NAMES.iter() {
         info!("[kernel] {}", app);
     }
-    info!("[kernel] ----------------")
+    info!("[kernel] ----------------");
 }
