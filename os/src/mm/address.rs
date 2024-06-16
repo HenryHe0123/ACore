@@ -18,6 +18,13 @@ pub struct PhysPageNum(pub usize);
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VirtPageNum(pub usize);
 
+impl PhysAddr {
+    /// Get mutable reference to `PhysAddr` value
+    pub fn get_mut<T>(&self) -> &'static mut T {
+        unsafe { (self.0 as *mut T).as_mut().unwrap() }
+    }
+}
+
 // usize <-> PhysAddr, PhysPageNum, VirtAddr, VirtPageNum
 
 impl From<usize> for PhysAddr {

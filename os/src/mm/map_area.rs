@@ -29,6 +29,18 @@ pub struct MapArea {
 }
 
 impl MapArea {
+    /// for fork
+    pub fn from_another(another: &MapArea) -> Self {
+        Self {
+            vpn_range: another.vpn_range.clone(),
+            data_frames: BTreeMap::new(),
+            map_type: another.map_type,
+            map_perm: another.map_perm,
+        }
+    }
+}
+
+impl MapArea {
     pub fn new(
         start_va: VirtAddr,
         end_va: VirtAddr,

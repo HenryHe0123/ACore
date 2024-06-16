@@ -8,9 +8,11 @@ pub mod page_table;
 use crate::debug;
 use crate::UPSafeCell;
 use address::VirtAddr;
+use alloc::string::String;
 use alloc::sync::Arc;
 use lazy_static::lazy_static;
 use memory_set::MemorySet;
+use page_table::PageTable;
 
 lazy_static! {
     pub static ref KERNEL_SPACE: Arc<UPSafeCell<MemorySet>> =
@@ -24,6 +26,35 @@ pub fn init() {
     frame_allocator::init_frame_allocator();
     // frame_allocator::frame_allocator_test();
     KERNEL_SPACE.exclusive_access().activate();
+}
+
+pub fn translated_str(token: usize, ptr: *const u8) -> String {
+    let page_table = PageTable::from_token(token);
+    let mut string = String::new();
+    let mut va = ptr as usize;
+    loop {
+        let ch: u8 = *(page_table
+            .translate_va(VirtAddr::from(va))
+            .unwrap()
+            .get_mut());
+        if ch == 0 {
+            break;
+        } else {
+            string.push(ch as char);
+            va += 1;
+        }
+    }
+    string
+}
+
+/// translate a ptr through page table and return a mutable reference
+pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
+    let page_table = PageTable::from_token(token);
+    let va = ptr as usize;
+    page_table
+        .translate_va(VirtAddr::from(va))
+        .unwrap()
+        .get_mut()
 }
 
 #[allow(unused)]

@@ -1,6 +1,6 @@
 //! Loading user applications into memory
 
-use crate::info;
+use crate::{debug, info};
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 
@@ -54,7 +54,6 @@ lazy_static! {
     };
 }
 
-#[allow(unused)]
 pub fn get_app_data_by_name(name: &str) -> Option<&'static [u8]> {
     (0..get_num_app())
         .find(|&i| APP_NAMES[i] == name)

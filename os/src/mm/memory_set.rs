@@ -14,6 +14,32 @@ pub struct MemorySet {
 }
 
 impl MemorySet {
+    pub fn from_existed_user(user_space: &MemorySet) -> MemorySet {
+        let mut memory_set = Self::new_bare();
+        // map trampoline
+        memory_set.map_trampoline();
+        // copy data sections/trap_context/user_stack
+        for area in user_space.areas.iter() {
+            let new_area = MapArea::from_another(area);
+            memory_set.push(new_area, None);
+            // copy data from another space
+            for vpn in area.vpn_range {
+                let src_ppn = user_space.translate_to_ppn(vpn).unwrap();
+                let dst_ppn = memory_set.translate_to_ppn(vpn).unwrap();
+                dst_ppn
+                    .get_bytes_array()
+                    .copy_from_slice(src_ppn.get_bytes_array());
+            }
+        }
+        memory_set
+    }
+
+    pub fn recycle_data_pages(&mut self) {
+        self.areas.clear();
+    }
+}
+
+impl MemorySet {
     pub fn translate_to_ppn(&self, vpn: VirtPageNum) -> Option<PhysPageNum> {
         self.page_table.translate_to_ppn(vpn)
     }
@@ -208,8 +234,10 @@ impl MemorySet {
         let mut memory_set = Self::new_bare();
         // map trampoline
         memory_set.map_trampoline();
+        // debug!("new_from_elf0");
         // map program headers of elf, with U flag
         let elf = xmas_elf::ElfFile::new(elf_data).unwrap();
+        // debug!("new_from_elf2");
         let elf_header = elf.header;
         // check magic number
         let magic = elf_header.pt1.magic;

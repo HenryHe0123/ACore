@@ -51,23 +51,26 @@ fn set_user_trap_entry() {
 pub fn trap_handler() -> ! {
     // set stvec to trap_from_kernel
     set_kernel_trap_entry();
-    // get current trap context from TASK_MANAGER
-    let cx = get_current_trap_cx();
     // get trap cause
     let scause = scause::read();
     // get extra value
     let stval = stval::read();
     match scause.cause() {
         Trap::Exception(Exception::UserEnvCall) => {
-            cx.sepc += 4; // sepc points to the ecall instruction initially
-            cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
-            // x10 = a0
+            // jump to next instruction anyway
+            let mut cx = current_trap_cx();
+            cx.sepc += 4;
+            // get system call return value
+            let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]);
+            // cx is changed during sys_exec, so we have to call it again
+            cx = current_trap_cx();
+            cx.x[10] = result as usize;
         }
         Trap::Exception(Exception::StoreFault)
         | Trap::Exception(Exception::StorePageFault)
         | Trap::Exception(Exception::LoadFault)
         | Trap::Exception(Exception::LoadPageFault) => {
-            warn!("[kernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.", stval, cx.sepc);
+            warn!("[kernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.", stval, current_trap_cx().sepc);
             // page fault exit code = -2
             exit_current_and_run_next(-2);
         }
@@ -104,7 +107,7 @@ pub fn trap_return() -> ! {
     set_user_trap_entry();
     // prepare for __restore_ctx
     let trap_cx_ptr = TRAP_CONTEXT;
-    let user_satp = get_current_user_token();
+    let user_satp = current_user_token();
     // crate::debug!("user token: {:#x}", user_satp);
     // compute the virtual address of __restore_ctx
     let restore_va = __restore_ctx as usize - __save_trap_ctx as usize + TRAMPOLINE;

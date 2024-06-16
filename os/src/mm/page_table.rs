@@ -154,6 +154,15 @@ impl PageTable {
             frames: Vec::new(),
         }
     }
+
+    /// Translate virtual address to physical address.
+    pub fn translate_va(&self, va: VirtAddr) -> Option<PhysAddr> {
+        self.find_pte(va.clone().floor()).map(|pte| {
+            let aligned_pa: usize = pte.ppn().into();
+            let offset = va.page_offset();
+            (aligned_pa + offset).into()
+        })
+    }
 }
 
 /// Translate user space buffer into a form that can be accessed in the kernel space

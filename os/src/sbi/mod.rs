@@ -9,6 +9,10 @@ pub fn console_putchar(c: u8) {
     uart::uart_putchar(c);
 }
 
+pub fn console_getchar() -> u8 {
+    uart::uart_getchar().unwrap_or(0)
+}
+
 const VIRT_TEST: *mut u32 = mmio::VIRT_TEST as *mut u32;
 const TEST_PASS: u32 = 0x5555;
 

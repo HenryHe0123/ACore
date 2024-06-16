@@ -1,5 +1,6 @@
 use super::TaskContext;
 use crate::config::TRAP_CONTEXT;
+use crate::debug;
 use crate::mm::address::*;
 use crate::mm::memory_set::MemorySet;
 use crate::mm::KERNEL_SPACE;
@@ -104,10 +105,62 @@ impl TaskControlBlockInner {
 
 impl TaskControlBlock {
     pub fn fork(self: &Arc<TaskControlBlock>) -> Arc<TaskControlBlock> {
-        unimplemented!()
+        // ---- access parent PCB exclusively
+        let mut parent_inner = self.inner_exclusive_access();
+        // copy user space (include trap context)
+        let memory_set = MemorySet::from_existed_user(&parent_inner.memory_set);
+        let trap_cx_ppn = memory_set
+            .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
+            .unwrap();
+        // alloc a pid and a kernel stack in kernel space
+        let pid_handle = pid_alloc();
+        let kernel_stack = KernelStack::new(&pid_handle);
+        let kernel_stack_top = kernel_stack.get_top();
+        let new_tcb = Arc::new(TaskControlBlock {
+            pid: pid_handle,
+            kernel_stack,
+            inner: UPSafeCell::new(TaskControlBlockInner {
+                trap_cx_ppn,
+                task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
+                task_status: TaskStatus::Ready,
+                memory_set,
+                parent: Some(Arc::downgrade(self)),
+                children: Vec::new(),
+                exit_code: 0,
+            }),
+        });
+        // add child
+        parent_inner.children.push(new_tcb.clone());
+        // modify kernel_sp in new trap_cx
+        // ---- access children PCB exclusively
+        let trap_cx = new_tcb.inner_exclusive_access().get_trap_cx();
+        trap_cx.kernel_sp = kernel_stack_top;
+        // return
+        new_tcb
+        // ---- stop exclusively accessing parent/children PCB automatically
     }
 
     pub fn exec(&self, elf_data: &[u8]) {
-        unimplemented!()
+        // memory_set with elf program headers/trampoline/trap context/user stack
+        let (memory_set, user_sp, entry_point) = MemorySet::new_from_elf(elf_data);
+        let trap_cx_ppn = memory_set
+            .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
+            .unwrap();
+        // ---- access inner exclusively
+        let mut inner = self.inner_exclusive_access();
+        // substitute memory_set
+        inner.memory_set = memory_set;
+        // update trap_cx ppn
+        inner.trap_cx_ppn = trap_cx_ppn;
+        // initialize trap_cx
+        let trap_cx = inner.get_trap_cx();
+        *trap_cx = TrapContext::app_init_context(
+            entry_point,
+            user_sp,
+            KERNEL_SPACE.exclusive_access().satp_token(),
+            self.kernel_stack.get_top(),
+            trap_handler as usize,
+        );
+        // ---- stop exclusively accessing inner automatically
     }
 }
