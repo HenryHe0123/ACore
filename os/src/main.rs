@@ -63,7 +63,6 @@ pub fn kernel_main() -> ! {
     mm::init();
     info!("[kernel] Hello, MMU!");
     task::add_initproc();
-    info!("[kernel] init process!");
     trap::init();
     loader::list_apps();
     task::run_tasks();

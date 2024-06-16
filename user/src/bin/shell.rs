@@ -22,7 +22,7 @@ fn print_prompt() {
 
 #[no_mangle]
 pub fn main() -> i32 {
-    println!("Rust user shell"); // Print welcome message
+    println!("Welcome to Shell!"); // Print welcome message
     let mut line: String = String::new(); // Initialize an empty string to store user input
     print_prompt();
 
@@ -38,7 +38,7 @@ pub fn main() -> i32 {
                     if pid == 0 {
                         // In the child process
                         if exec(line.as_str()) == -1 {
-                            println!("Error when executing {}!", line); // Print error if execution fails
+                            println!("Shell: Error when executing {}!", line); // Print error if execution fails
                             return -4; // Return error code
                         }
                         unreachable!();

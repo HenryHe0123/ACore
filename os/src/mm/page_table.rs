@@ -158,7 +158,8 @@ impl PageTable {
     /// Translate virtual address to physical address.
     pub fn translate_va(&self, va: VirtAddr) -> Option<PhysAddr> {
         self.find_pte(va.clone().floor()).map(|pte| {
-            let aligned_pa: usize = pte.ppn().into();
+            let aligned_pa: PhysAddr = pte.ppn().into();
+            let aligned_pa: usize = aligned_pa.into();
             let offset = va.page_offset();
             (aligned_pa + offset).into()
         })

@@ -1,6 +1,5 @@
 use super::TaskContext;
 use crate::config::TRAP_CONTEXT;
-use crate::debug;
 use crate::mm::address::*;
 use crate::mm::memory_set::MemorySet;
 use crate::mm::KERNEL_SPACE;

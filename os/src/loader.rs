@@ -1,6 +1,6 @@
 //! Loading user applications into memory
 
-use crate::{debug, info};
+use crate::info;
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 

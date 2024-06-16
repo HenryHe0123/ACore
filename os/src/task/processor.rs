@@ -5,7 +5,7 @@ use crate::task::manager::fetch_task;
 use crate::task::switch::__switch;
 use crate::task::TaskStatus;
 use crate::trap::TrapContext;
-use crate::{info, UPSafeCell};
+use crate::UPSafeCell;
 use alloc::sync::Arc;
 use lazy_static::lazy_static;
 
@@ -79,7 +79,7 @@ pub fn run_tasks() {
     loop {
         let mut processor = PROCESSOR.exclusive_access();
         if let Some(task) = fetch_task() {
-            info!("Processor: switch to task {}", task.pid.0);
+            // info!("Processor: switch to task {}", task.pid.0);
             let idle_task_cx_ptr = processor.get_idle_task_cx_ptr();
             // access coming task TCB exclusively
             let mut task_inner = task.inner_exclusive_access();

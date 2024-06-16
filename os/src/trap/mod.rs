@@ -126,5 +126,9 @@ pub fn trap_return() -> ! {
 
 #[no_mangle]
 pub fn trap_from_kernel() -> ! {
-    unimplemented!("a trap from kernel!")
+    panic!(
+        "Trap when in S-mode! [{:?}] , at address : {:#X}",
+        scause::read().cause(),
+        stval::read()
+    );
 }
