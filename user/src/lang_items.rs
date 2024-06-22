@@ -1,3 +1,4 @@
+use crate::exit;
 use crate::println;
 use core::panic::PanicInfo;
 
@@ -13,5 +14,6 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         println!("Panicked: {}", info.message().unwrap());
     }
-    loop {}
+    exit(-1);
+    unreachable!()
 }
