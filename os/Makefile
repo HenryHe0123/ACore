@@ -16,7 +16,7 @@ make-user:
 clean:
 	@cargo clean
 
-build: clean make-user
+build: make-user
 	@cargo build --release
 	@rust-objcopy --strip-all $(OS_ELF) -O binary $(OS_BIN)
 

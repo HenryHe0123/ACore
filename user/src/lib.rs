@@ -6,6 +6,7 @@
 pub mod api;
 mod heap;
 mod lang_items;
+pub mod process;
 mod syscall;
 mod up;
 

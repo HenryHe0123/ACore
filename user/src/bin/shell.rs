@@ -17,7 +17,8 @@ use user_lib::console::getchar;
 use user_lib::{exec, fork, waitpid};
 
 fn print_prompt() {
-    print!(">> ");
+    let prompt = "\x1b[32mhenryhe@ACore\x1b[0m:\x1b[34m~\x1b[0m$ ";
+    print!("{}", prompt);
 }
 
 #[no_mangle]

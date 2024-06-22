@@ -1,17 +1,16 @@
 # Process
 
-### 输入支持
-- **UART输入**：支持逐字符输入。如果没有字符输入，则等待或将控制权交给其他任务。
+### 输入
+- **UART输入**：支持逐字符输入（`getchar`）。如果没有字符输入，则等待并将控制权交给其他任务（`suspend_current_and_run_next`）。
 
-### ELF加载器支持
+### ELF加载
 - **`build.rs`**：在内核中嵌入每个应用程序的名称。
-- **`elf-loader`**：根据名称加载ELF文件。
+- **`loader.rs`**：根据名称加载ELF文件。
 
 ### 进程结构
 
-- **PID分配器**：RAII（资源获取即初始化）
-- **内核堆栈分配器**：RAII
-- **`TaskStruct`**：任务结构体，包含以下信息：
+- **PID & KernelStack**：RAII (资源获取即初始化)
+- **TaskStruct**：任务结构体，包含以下信息：
   - PID
   - 内核堆栈资源
   - 任务状态
@@ -34,20 +33,13 @@
 
 示例流程：`task A -> idle -> another task B`，此时有一个空闲控制流，未运行在任何任务的内核堆栈上，而是运行在该核心的引导堆栈上。
 
-### 资源管理
-- 支持资源释放。
-
-### 用户程序
-- **`initproc`**：初始化进程。
-- **`shell`**：用户shell。
-
 ### 进程系统调用
 - **`sys_fork()`**：复制当前任务。
 - **`sys_exec()`**：从ELF文件加载。
 - **`sys_waitpid(pid, *exit_code)`**：等待子进程并获取退出代码，**释放任务结构体空间**。
   - `sys_waitpid(-1)`：等待任意子进程。
-  - `sys_waitpid()`返回`-1`：没有子进程（指定PID）。
-  - `sys_waitpid()`返回`-2`：子进程正在运行。
+  - `sys_waitpid() -> -1`：没有子进程（指定PID）。
+  - `sys_waitpid() -> -2`：子进程正在运行。
   - `sys_waitpid(id) -> id`：子进程`id`退出。
 
 ### 用户API：系统调用的封装

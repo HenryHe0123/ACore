@@ -20,7 +20,7 @@ mod console;
 
 extern crate alloc;
 
-use crate::sbi::{shutdown, timer};
+use crate::sbi::*;
 use crate::sync::up::UPSafeCell;
 use core::arch::{asm, global_asm};
 use riscv::register::{mepc, mstatus, pmpaddr0, pmpcfg0, satp};
