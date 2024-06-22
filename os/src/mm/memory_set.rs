@@ -116,6 +116,14 @@ impl MemorySet {
             PTEFlags::R | PTEFlags::X,
         );
     }
+
+    fn map_shared_page(&mut self) {
+        self.page_table.map(
+            VirtAddr::from(SHARED_PAGE).into(),
+            PhysAddr::from(SHARED_PAGE).into(),
+            PTEFlags::R | PTEFlags::W | PTEFlags::U,
+        );
+    }
 }
 
 // kernel space
@@ -230,6 +238,8 @@ impl MemorySet {
         let mut memory_set = Self::new_bare();
         // map trampoline
         memory_set.map_trampoline();
+        // map shared page
+        memory_set.map_shared_page();
         // debug!("new_from_elf0");
         // map program headers of elf, with U flag
         let elf = xmas_elf::ElfFile::new(elf_data).unwrap();

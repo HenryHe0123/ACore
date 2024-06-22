@@ -11,6 +11,7 @@ const LF: u8 = 0x0au8; // Line Feed
 const CR: u8 = 0x0du8; // Carriage Return
 const DL: u8 = 0x7fu8; // Delete
 const BS: u8 = 0x08u8; // Backspace
+const CC: u8 = 3; // Ctrl+C
 
 use alloc::string::String;
 use user_lib::console::getchar;
@@ -72,4 +73,5 @@ pub fn main() -> i32 {
             }
         }
     }
+    0
 }

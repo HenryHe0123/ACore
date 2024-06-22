@@ -18,3 +18,21 @@ pub fn kernel_stack_position(id: usize) -> (usize, usize) {
     let bottom = top - KERNEL_STACK_SIZE;
     (bottom, top)
 }
+
+// --------------- for user - kernel communication ----------------------
+
+pub const SHARED_PAGE: usize = 0x83000000;
+
+pub fn write_to_shared_page(index: usize, value: i32) {
+    unsafe {
+        let ptr = (SHARED_PAGE as *mut i32).offset(index as isize);
+        *ptr = value;
+    }
+}
+
+pub fn read_from_shared_page(index: usize) -> i32 {
+    unsafe {
+        let ptr = (SHARED_PAGE as *const i32).offset(index as isize);
+        *ptr
+    }
+}
