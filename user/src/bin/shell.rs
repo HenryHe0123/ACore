@@ -36,7 +36,7 @@ fn check_permission(name: &str) -> bool {
 #[no_mangle]
 pub fn main() -> i32 {
     println!("Welcome to Shell!"); // Print welcome message
-    println!("Shell pid = {}", getpid()); // Print the PID of the shell process
+    // println!("Shell pid = {}", getpid()); // Print the PID of the shell process
     let mut line: String = String::new(); // Initialize an empty string to store user input
     print_prompt();
 
