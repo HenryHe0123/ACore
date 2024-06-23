@@ -12,7 +12,7 @@ This is a simple RISC-V microkernel built from scratch, written in Rust.
 
 Run the following commands to build and test the kernel:
 
-```
+```bash
 $ git clone git@github.com:HenryHe0123/ACore.git
 $ cd ACore/os
 $ make run
