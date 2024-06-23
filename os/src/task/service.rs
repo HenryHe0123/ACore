@@ -5,42 +5,40 @@ use crate::task::switch::set_proc_manager_service_on;
 
 // debug: remember to drop execlusive access before switch to proc manager
 pub fn switch_to_proc_manager() {
-    // crate::debug!("switch_to_proc_manager");
     set_proc_manager_service_on();
     suspend_current_and_run_next();
 }
 
 const EXIT: i32 = 1;
-const GET_EXIT_CODE: i32 = 2;
-const CREATE: i32 = 3;
+const WAIT: i32 = 2;
+const FORK: i32 = 3;
 
-pub fn exit_process(pid: usize, exit_code: i32) {
-    // crate::debug!("exit_process: pid = {}, exit_code = {}", pid, exit_code);
+pub fn exit(pid: usize, exit_code: i32) {
     write_to_shared_page(0, EXIT);
     write_to_shared_page(1, pid as i32);
     write_to_shared_page(2, exit_code);
     switch_to_proc_manager();
 }
 
-pub fn get_process_exit_code(pid: usize) -> Option<i32> {
-    // crate::debug!("get_process_exit_code: pid = {}", pid);
-    write_to_shared_page(0, GET_EXIT_CODE);
-    write_to_shared_page(1, pid as i32);
+/// If there is not a child process whose pid is same as given, return (0, _).
+/// Else if there is a child process but it is still running, return (1, _).
+/// Else return (found_pid, exit_code).
+pub fn waitpid(parent_pid: usize, pid: isize) -> (usize, i32) {
+    write_to_shared_page(0, WAIT);
+    write_to_shared_page(1, parent_pid as i32);
+    write_to_shared_page(2, pid as i32);
     switch_to_proc_manager();
 
-    let exit_code = read_from_shared_page(2);
-    if exit_code == -19260817 {
-        None
-    } else {
-        Some(exit_code)
-    }
+    let found_pid = read_from_shared_page(3);
+    let exit_code = read_from_shared_page(4);
+    (found_pid as usize, exit_code)
 }
 
-pub fn create_new_process() -> usize {
-    // crate::debug!("create_new_process");
-    write_to_shared_page(0, CREATE);
+pub fn fork(parent_pid: usize) -> usize {
+    write_to_shared_page(0, FORK);
+    write_to_shared_page(1, parent_pid as i32);
     switch_to_proc_manager();
 
-    let new_pid = read_from_shared_page(1);
+    let new_pid = read_from_shared_page(2);
     new_pid as usize
 }

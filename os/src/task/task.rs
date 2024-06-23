@@ -8,8 +8,6 @@ use crate::task::service;
 use crate::trap::*;
 use crate::UPSafeCell;
 use alloc::sync::Arc;
-use alloc::sync::Weak;
-use alloc::vec::Vec;
 use core::cell::RefMut;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -58,13 +56,7 @@ impl TaskControlBlock {
             .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();
         // 分配 pid 和 kernel stack
-
-        let pid = if pre_alloc_pid == 0 {
-            service::create_new_process()
-        } else {
-            pre_alloc_pid
-        };
-
+        let pid = pre_alloc_pid;
         let kernel_stack = KernelStack::new(pid);
         let kernel_stack_top = kernel_stack.get_top();
         // push a task context which goes to trap_return to the top of kernel stack
@@ -76,8 +68,6 @@ impl TaskControlBlock {
                 task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
                 task_status: TaskStatus::Ready,
                 memory_set,
-                parent: None,
-                children: Vec::new(),
             }),
         };
         // prepare Trap Context in user space
@@ -98,8 +88,6 @@ pub struct TaskControlBlockInner {
     pub task_cx: TaskContext,
     pub memory_set: MemorySet,
     pub trap_cx_ppn: PhysPageNum,
-    pub parent: Option<Weak<TaskControlBlock>>,
-    pub children: Vec<Arc<TaskControlBlock>>,
 }
 
 impl TaskControlBlockInner {
@@ -129,35 +117,31 @@ impl TaskControlBlock {
         let trap_cx_ppn = memory_set
             .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();
-        
-        // alloc a pid and a kernel stack in kernel space
-        drop(parent_inner);
-        let pid_handle = service::create_new_process();
-        let mut parent_inner = self.inner_exclusive_access();
 
-        let kernel_stack = KernelStack::new(pid_handle);
+        // alloc a pid and a kernel stack in kernel space
+        let parent_pid = self.getpid();
+        drop(parent_inner);
+
+        let new_pid = service::fork(parent_pid);
+
+        let kernel_stack = KernelStack::new(new_pid);
         let kernel_stack_top = kernel_stack.get_top();
         let new_tcb = Arc::new(TaskControlBlock {
-            pid: pid_handle,
+            pid: new_pid,
             kernel_stack,
             inner: UPSafeCell::new(TaskControlBlockInner {
                 trap_cx_ppn,
                 task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
                 task_status: TaskStatus::Ready,
                 memory_set,
-                parent: Some(Arc::downgrade(self)),
-                children: Vec::new(),
             }),
         });
-        // add child
-        parent_inner.children.push(new_tcb.clone());
         // modify kernel_sp in new trap_cx
         // ---- access children PCB exclusively
         let trap_cx = new_tcb.inner_exclusive_access().get_trap_cx();
         trap_cx.kernel_sp = kernel_stack_top;
         // return
         new_tcb
-        // ---- stop exclusively accessing parent/children PCB automatically
     }
 
     pub fn exec(&self, elf_data: &[u8]) {

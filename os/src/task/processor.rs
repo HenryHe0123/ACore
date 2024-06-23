@@ -57,6 +57,10 @@ pub fn current_task() -> Option<Arc<TaskControlBlock>> {
     PROCESSOR.exclusive_access().clone_current()
 }
 
+pub fn current_pid() -> usize {
+    current_task().unwrap().pid
+}
+
 pub fn current_user_token() -> usize {
     let task = current_task().unwrap();
     let token = task.inner_exclusive_access().get_user_token();

@@ -1,8 +1,8 @@
 mod context;
 mod kernel_stack;
 mod manager;
-pub mod service;
 mod processor;
+pub mod service;
 pub mod switch;
 mod task;
 
@@ -57,27 +57,13 @@ pub fn suspend_current_and_run_next() {
 
 /// Exit the current 'Running' task and run the next task in task list.
 pub fn exit_current_and_run_next(exit_code: i32) {
-    let current_task = current_task().expect("no current task");
-    let pid = current_task.getpid();
-    drop(current_task);
-    service::exit_process(pid, exit_code);
+    let pid = current_pid();
+    service::exit(pid, exit_code);
 
     // take current task from Processor
     let current_task = take_current_task().expect("no current task");
     let mut current_inner = current_task.inner_exclusive_access();
     current_inner.task_status = TaskStatus::Zombie;
-    // record exit code
-    // current_inner.exit_code = exit_code;
-
-    // move its children to initproc
-    {
-        let mut initproc_inner = INITPROC.inner_exclusive_access();
-        for child in current_inner.children.iter() {
-            child.inner_exclusive_access().parent = Some(Arc::downgrade(&INITPROC));
-            initproc_inner.children.push(child.clone());
-        }
-    }
-    current_inner.children.clear();
 
     // deallocate user space
     current_inner.memory_set.recycle_data_pages();

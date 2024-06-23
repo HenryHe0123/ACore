@@ -10,8 +10,9 @@ use user_lib::yield_;
 extern crate user_lib;
 
 const EXIT: i32 = 1;
-const GET_EXIT_CODE: i32 = 2;
-const CREATE: i32 = 3;
+const WAIT: i32 = 2;
+const FORK: i32 = 3;
+const DEBUG: bool = false;
 
 fn init_proc_manager() {
     PROC_MANAGER.exclusive_access().init();
@@ -28,25 +29,28 @@ fn main() {
             EXIT => {
                 let pid = read_from_shared_page(1) as usize;
                 let exit_code = read_from_shared_page(2);
-                println!(
-                    "[process manager] Process {} exited with code {}",
-                    pid, exit_code
-                );
-                PROC_MANAGER
-                    .exclusive_access()
-                    .set_exit_code(pid, exit_code);
+                PROC_MANAGER.exclusive_access().exit(pid, exit_code);
+                if DEBUG {
+                    println!("[process manager] Exit process: {}", pid);
+                }
                 yield_();
             }
-            GET_EXIT_CODE => {
-                let pid = read_from_shared_page(1);
-                let exit_code = PROC_MANAGER.exclusive_access().get_exit_code(pid as usize);
-                write_to_shared_page(2, exit_code.unwrap_or(0));
+            WAIT => {
+                let parent_pid = read_from_shared_page(1) as usize;
+                let pid = read_from_shared_page(2);
+                let (found_pid, exit_code) =
+                    PROC_MANAGER.exclusive_access().waitpid(parent_pid, pid);
+                write_to_shared_page(3, found_pid as i32);
+                write_to_shared_page(4, exit_code);
                 yield_();
             }
-            CREATE => {
-                let new_pid = PROC_MANAGER.exclusive_access().create_new_process();
-                println!("[process manager] Create new process: {}", new_pid);
-                write_to_shared_page(1, new_pid as i32);
+            FORK => {
+                let parent_pid = read_from_shared_page(1) as usize;
+                let new_pid = PROC_MANAGER.exclusive_access().fork(parent_pid);
+                write_to_shared_page(2, new_pid as i32);
+                if DEBUG {
+                    println!("[process manager] Fork new process: {}", new_pid);
+                }
                 yield_();
             }
             _ => {
