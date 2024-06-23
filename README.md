@@ -58,3 +58,8 @@ henryhe@ACore:~$
 The supported applications are listed above. You can use the `ls` command to display them again. To run an application, just type its name and press Enter. `usertests` can run a bunch of applications, thus it is recommended.
 
 There are several ways to exit the OS. You can gracefully shut down by typing `shutdown` in the shell and pressing Enter. Or you can type `Ctrl+a` then `x` to terminate Qemu. We also support using `Ctrl+c` to terminate the shell and then exit the system.
+
+### Tutorial
+
+- [ACore-Guide](https://acore-guide.sjtu.app)
+- [rCore-Tutorial-Book-v3](https://rcore-os.cn/rCore-Tutorial-Book-v3)
