@@ -25,6 +25,9 @@ const SYSCALL_FORK: usize = 220;
 const SYSCALL_EXEC: usize = 221;
 const SYSCALL_WAITPID: usize = 260;
 
+const SYSCALL_SHUTDOWN: usize = 216;
+const SYSCALL_LS: usize = 217;
+
 pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
     syscall(SYSCALL_WRITE, [fd, buffer.as_ptr() as usize, buffer.len()])
 }
@@ -72,4 +75,13 @@ pub fn sys_exec(path: &str) -> isize {
 /// 否则返回结束的子进程的进程 ID。
 pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
     syscall(SYSCALL_WAITPID, [pid as usize, exit_code as usize, 0])
+}
+
+pub fn sys_shutdown() -> ! {
+    syscall(SYSCALL_SHUTDOWN, [0, 0, 0]);
+    unreachable!()
+}
+
+pub fn sys_ls() -> isize {
+    syscall(SYSCALL_LS, [0, 0, 0])
 }

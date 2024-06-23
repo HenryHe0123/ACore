@@ -1,22 +1,23 @@
-//! Implementation of [`Processor`] and Intersection of control flow
+//! Implementation of [`Scheduler`] and Intersection of control flow
 
 use super::{TaskContext, TaskControlBlock};
+use crate::info;
+use crate::shutdown;
 use crate::task::manager::fetch_task;
 use crate::task::switch::__switch;
-use crate::task::TaskStatus;
 use crate::trap::TrapContext;
 use crate::UPSafeCell;
 use alloc::sync::Arc;
 use lazy_static::lazy_static;
 
-pub struct Processor {
+pub struct Scheduler {
     /// The task currently executing on the current processor
     current: Option<Arc<TaskControlBlock>>,
     /// The basic control flow of core, helping to select and switch process
     idle_task_cx: TaskContext,
 }
 
-impl Processor {
+impl Scheduler {
     /// Create an empty Processor
     pub fn new() -> Self {
         Self {
@@ -42,19 +43,19 @@ impl Processor {
 }
 
 lazy_static! {
-    pub static ref PROCESSOR: UPSafeCell<Processor> = UPSafeCell::new(Processor::new());
+    pub static ref SCHEDULER: UPSafeCell<Scheduler> = UPSafeCell::new(Scheduler::new());
 }
 
 // interface -------------------------------------------
 
 /// The current task will be None
 pub fn take_current_task() -> Option<Arc<TaskControlBlock>> {
-    PROCESSOR.exclusive_access().take_current()
+    SCHEDULER.exclusive_access().take_current()
 }
 
 /// Get current task by clone Arc
 pub fn current_task() -> Option<Arc<TaskControlBlock>> {
-    PROCESSOR.exclusive_access().clone_current()
+    SCHEDULER.exclusive_access().clone_current()
 }
 
 pub fn current_pid() -> usize {
@@ -81,32 +82,34 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Loop `fetch_task` to get the process that needs to run, and switch the process through `__switch`
 pub fn run_tasks() {
     loop {
-        let mut processor = PROCESSOR.exclusive_access();
+        let mut scheduler = SCHEDULER.exclusive_access();
         if let Some(task) = fetch_task() {
-            let idle_task_cx_ptr = processor.get_idle_task_cx_ptr();
+            let idle_task_cx_ptr = scheduler.get_idle_task_cx_ptr();
 
             // access coming task TCB exclusively
             let mut task_inner = task.inner_exclusive_access();
             let next_task_cx_ptr = task_inner.get_task_cx_ptr();
-            task_inner.task_status = TaskStatus::Running;
             // stop exclusively accessing coming task TCB manually
             drop(task_inner);
 
-            processor.current = Some(task);
-            drop(processor);
+            scheduler.current = Some(task);
+            drop(scheduler);
 
             unsafe {
                 __switch(idle_task_cx_ptr, next_task_cx_ptr);
             }
+        } else {
+            info!("[kernel] All tasks completed.");
+            shutdown(false);
         }
     }
 }
 
 /// Return to idle control flow for new scheduling
 pub fn schedule(switched_task_cx_ptr: *mut TaskContext) {
-    let mut processor = PROCESSOR.exclusive_access();
-    let idle_task_cx_ptr = processor.get_idle_task_cx_ptr();
-    drop(processor);
+    let mut scheduler = SCHEDULER.exclusive_access();
+    let idle_task_cx_ptr = scheduler.get_idle_task_cx_ptr();
+    drop(scheduler);
     unsafe {
         __switch(switched_task_cx_ptr, idle_task_cx_ptr);
     }

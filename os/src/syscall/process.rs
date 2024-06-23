@@ -4,7 +4,6 @@ use crate::mm::*;
 use crate::task::switch::check_proc_manager_service;
 use crate::task::*;
 use crate::timer::get_time_ms;
-use alloc::sync::Arc;
 use switch::set_proc_manager_service_off;
 
 /// task exits and submit an exit code
@@ -38,8 +37,8 @@ pub fn sys_getpid() -> isize {
 
 pub fn sys_fork() -> isize {
     let current_task = current_task().unwrap();
-    let new_task = current_task.fork(); // child process
-    let new_pid = new_task.pid;
+    let new_pid = service::fork(current_task.pid); // child process
+    let new_task = current_task.fork(new_pid);
 
     // for child process, fork returns 0 to u-mode when it's scheduled
     // so modify trap context of new_task, it will not go back to trap_return
@@ -68,10 +67,7 @@ pub fn sys_exec(path: *const u8) -> isize {
 /// Else if there is a child process but it is still running, return -2.
 /// Else return found_pid.
 pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
-    let task = current_task().expect("no current task");
-    let parent_pid = task.pid;
-
-    let (found_pid, exit_code) = service::waitpid(parent_pid, pid);
+    let (found_pid, exit_code) = service::waitpid(current_pid(), pid);
 
     match found_pid {
         0 => {
@@ -84,9 +80,13 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
         }
         _ => {
             // store exit code to user space
-            let inner = task.inner_exclusive_access();
-            *translated_refmut(inner.memory_set.satp_token(), exit_code_ptr) = exit_code;
+            *translated_refmut(current_user_token(), exit_code_ptr) = exit_code;
             found_pid as isize
         }
     }
+}
+
+pub fn sys_shutdown() -> isize {
+    info!("[kernel] Shutdown by user.");
+    crate::shutdown(false)
 }

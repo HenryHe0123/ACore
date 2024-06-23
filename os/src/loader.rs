@@ -1,6 +1,6 @@
 //! Loading user applications into memory
 
-use crate::info;
+use crate::{info, println};
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 
@@ -63,7 +63,19 @@ pub fn get_app_data_by_name(name: &str) -> Option<&'static [u8]> {
 pub fn list_apps() {
     info!("[kernel] ----- APPS -----");
     for app in APP_NAMES.iter() {
-        info!("[kernel] {}", app);
+        if app != &"proc_manager" && app != &"initproc" && app != &"shell" {
+            info!("[kernel] {}", app);
+        }
+        // info!("[kernel] {}", app);
     }
     info!("[kernel] ----------------");
+}
+
+/// for built-in commands `ls`
+pub fn ls() {
+    for app in APP_NAMES.iter() {
+        if app != &"proc_manager" && app != &"initproc" && app != &"shell" {
+            println!("{}", app);
+        }
+    }
 }

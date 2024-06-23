@@ -34,6 +34,7 @@ impl MemorySet {
         memory_set
     }
 
+    #[allow(unused)]
     pub fn recycle_data_pages(&mut self) {
         self.areas.clear();
     }

@@ -161,8 +161,8 @@ impl ProcessManager {
     }
 
     pub fn init(&mut self) {
-        self.add(INITPROC.clone()); // init process
-        self.add(Arc::new(Process::new())); // proc manager
+        self.add(Arc::new(Process::new())); // proc manager (pid = 0)
+        self.add(INITPROC.clone()); // init process (pid = 1)
     }
 }
 

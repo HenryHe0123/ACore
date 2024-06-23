@@ -2,11 +2,18 @@
 
 use super::TaskContext;
 use crate::global_asm;
+use crate::task::suspend_current_and_run_next;
 
 global_asm!(include_str!("switch.s"));
 
 extern "C" {
     pub fn __switch(current_task_cx_ptr: *mut TaskContext, next_task_cx_ptr: *const TaskContext);
+}
+
+// debug: remember to drop execlusive access before switch to proc_manager
+pub fn switch_to_proc_manager() {
+    set_proc_manager_service_on();
+    suspend_current_and_run_next();
 }
 
 // -----------------------------------------------

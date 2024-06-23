@@ -4,18 +4,10 @@ use crate::mm::address::*;
 use crate::mm::memory_set::MemorySet;
 use crate::mm::KERNEL_SPACE;
 use crate::task::kernel_stack::KernelStack;
-use crate::task::service;
 use crate::trap::*;
 use crate::UPSafeCell;
 use alloc::sync::Arc;
 use core::cell::RefMut;
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum TaskStatus {
-    Ready,
-    Running,
-    Zombie,
-}
 
 pub struct TaskControlBlock {
     // immutable
@@ -44,10 +36,6 @@ impl TaskControlBlock {
         self.inner.try_borrow_mut()
     }
 
-    pub fn getpid(&self) -> usize {
-        self.pid
-    }
-
     pub fn new(elf_data: &[u8], pre_alloc_pid: usize) -> Self {
         // 从elf文件中解析出内存布局
         let (memory_set, user_sp, entry_point) = MemorySet::new_from_elf(elf_data);
@@ -66,7 +54,6 @@ impl TaskControlBlock {
             inner: UPSafeCell::new(TaskControlBlockInner {
                 trap_cx_ppn,
                 task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
-                task_status: TaskStatus::Ready,
                 memory_set,
             }),
         };
@@ -84,7 +71,6 @@ impl TaskControlBlock {
 }
 
 pub struct TaskControlBlockInner {
-    pub task_status: TaskStatus,
     pub task_cx: TaskContext,
     pub memory_set: MemorySet,
     pub trap_cx_ppn: PhysPageNum,
@@ -99,31 +85,23 @@ impl TaskControlBlockInner {
         self.memory_set.satp_token()
     }
 
-    pub fn is_zombie(&self) -> bool {
-        self.task_status == TaskStatus::Zombie
-    }
-
     pub fn get_task_cx_ptr(&mut self) -> *mut TaskContext {
         &mut self.task_cx
     }
 }
 
 impl TaskControlBlock {
-    pub fn fork(self: &Arc<TaskControlBlock>) -> Arc<TaskControlBlock> {
+    pub fn fork(self: &Arc<TaskControlBlock>, new_pid: usize) -> Arc<TaskControlBlock> {
         // ---- access parent PCB exclusively
         let parent_inner = self.inner_exclusive_access();
         // copy user space (include trap context)
         let memory_set = MemorySet::from_existed_user(&parent_inner.memory_set);
+        drop(parent_inner);
         let trap_cx_ppn = memory_set
             .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();
 
-        // alloc a pid and a kernel stack in kernel space
-        let parent_pid = self.getpid();
-        drop(parent_inner);
-
-        let new_pid = service::fork(parent_pid);
-
+        // alloc kernel stack in kernel space
         let kernel_stack = KernelStack::new(new_pid);
         let kernel_stack_top = kernel_stack.get_top();
         let new_tcb = Arc::new(TaskControlBlock {
@@ -132,7 +110,6 @@ impl TaskControlBlock {
             inner: UPSafeCell::new(TaskControlBlockInner {
                 trap_cx_ppn,
                 task_cx: TaskContext::new(trap_return as usize, kernel_stack_top),
-                task_status: TaskStatus::Ready,
                 memory_set,
             }),
         });

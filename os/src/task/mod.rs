@@ -1,7 +1,7 @@
 mod context;
 mod kernel_stack;
 mod manager;
-mod processor;
+mod scheduler;
 pub mod service;
 pub mod switch;
 mod task;
@@ -11,7 +11,7 @@ use alloc::sync::Arc;
 pub use context::TaskContext;
 use lazy_static::lazy_static;
 pub use manager::*;
-pub use processor::*;
+pub use scheduler::*;
 use switch::check_proc_manager_service;
 use task::*;
 
@@ -22,7 +22,7 @@ lazy_static! {
     ));
     pub static ref PROC_MANAGER: Arc<TaskControlBlock> = Arc::new(TaskControlBlock::new(
         get_app_data_by_name("proc_manager").unwrap(),
-        2
+        0
     ));
 }
 
@@ -37,8 +37,6 @@ pub fn suspend_current_and_run_next() {
     let current_task = take_current_task().expect("no current task");
     let mut current_inner = current_task.inner_exclusive_access();
     let task_cx_ptr = current_inner.get_task_cx_ptr();
-    // Change status to Ready
-    current_inner.task_status = TaskStatus::Ready;
     drop(current_inner);
 
     if check_proc_manager_service() {
@@ -57,19 +55,17 @@ pub fn suspend_current_and_run_next() {
 
 /// Exit the current 'Running' task and run the next task in task list.
 pub fn exit_current_and_run_next(exit_code: i32) {
-    let pid = current_pid();
-    service::exit(pid, exit_code);
+    service::exit(current_pid(), exit_code);
 
     // take current task from Processor
-    let current_task = take_current_task().expect("no current task");
-    let mut current_inner = current_task.inner_exclusive_access();
-    current_inner.task_status = TaskStatus::Zombie;
-
-    // deallocate user space
-    current_inner.memory_set.recycle_data_pages();
-    drop(current_inner);
-    // drop task manually to maintain rc correctly
+    let current_task = take_current_task().unwrap();
+    // confirm that current task will be deallocated
+    if current_task.pid > 1 {
+        assert_eq!(Arc::strong_count(&current_task), 1);
+    }
+    // recycle current task resources
     drop(current_task);
+
     // we do not have to save task context, just run next
     let mut _unused = TaskContext::empty();
     schedule(&mut _unused as *mut _);

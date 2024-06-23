@@ -24,6 +24,11 @@ fn check_permission(name: &str) -> bool {
     if name == "proc_manager\0" || name == "initproc\0" || name == "shell\0" {
         println!("Shell: Permission denied!");
         return false;
+    } else if name == "shutdown\0" {
+        shutdown();
+    } else if name == "ls\0" {
+        ls();
+        return false;
     }
     true
 }
@@ -38,6 +43,10 @@ pub fn main() -> i32 {
     loop {
         let c = getchar(); // Read a character from user input
         match c {
+            CC => {
+                println!("^C");
+                break;
+            }
             LF | CR => {
                 // If it's a Line Feed or Carriage Return
                 println!(""); // Print a newline (echo the newline)

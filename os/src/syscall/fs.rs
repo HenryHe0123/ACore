@@ -1,3 +1,4 @@
+use crate::loader::ls;
 use crate::mm::page_table::translated_byte_buffer;
 use crate::print;
 use crate::sbi::console_getchar;
@@ -52,4 +53,9 @@ pub fn sys_read(fd: usize, buf: *const u8, len: usize) -> isize {
             panic!("Unsupported fd in sys_read!");
         }
     }
+}
+
+pub fn sys_ls() -> isize {
+    ls();
+    0
 }

@@ -1,13 +1,5 @@
 use crate::config::*;
-
-use crate::task::suspend_current_and_run_next;
-use crate::task::switch::set_proc_manager_service_on;
-
-// debug: remember to drop execlusive access before switch to proc manager
-pub fn switch_to_proc_manager() {
-    set_proc_manager_service_on();
-    suspend_current_and_run_next();
-}
+use crate::task::switch::switch_to_proc_manager;
 
 const EXIT: i32 = 1;
 const WAIT: i32 = 2;

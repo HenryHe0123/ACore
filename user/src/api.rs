@@ -39,7 +39,6 @@ pub fn waitpid(pid: usize, exit_code: &mut i32) -> isize {
             -2 => {
                 yield_();
             }
-            // -1 (error) or a real pid
             exit_pid => return exit_pid,
         }
     }
@@ -62,6 +61,14 @@ pub fn sleep(period_ms: usize) {
     while sys_time() < start + period_ms as isize {
         sys_yield();
     }
+}
+
+pub fn shutdown() -> ! {
+    sys_shutdown()
+}
+
+pub fn ls() {
+    sys_ls();
 }
 
 // --------------- for user - kernel communication ----------------------
