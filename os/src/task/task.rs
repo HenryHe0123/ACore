@@ -29,7 +29,21 @@ pub struct TaskControlBlock {
 
 impl TaskControlBlock {
     pub fn inner_exclusive_access(&self) -> RefMut<'_, TaskControlBlockInner> {
+        match self.try_borrow_mut() {
+            Ok(task_inner) => {
+                drop(task_inner);
+            }
+            Err(_) => {
+                panic!("TCB inner is already borrowed for pid {}!", self.pid.0);
+            }
+        }
         self.inner.exclusive_access()
+    }
+
+    fn try_borrow_mut(
+        &self,
+    ) -> Result<RefMut<'_, TaskControlBlockInner>, core::cell::BorrowMutError> {
+        self.inner.try_borrow_mut()
     }
 
     pub fn getpid(&self) -> usize {
@@ -58,7 +72,6 @@ impl TaskControlBlock {
                 memory_set,
                 parent: None,
                 children: Vec::new(),
-                exit_code: 0,
             }),
         };
         // prepare Trap Context in user space
@@ -81,7 +94,6 @@ pub struct TaskControlBlockInner {
     pub trap_cx_ppn: PhysPageNum,
     pub parent: Option<Weak<TaskControlBlock>>,
     pub children: Vec<Arc<TaskControlBlock>>,
-    pub exit_code: i32,
 }
 
 impl TaskControlBlockInner {
@@ -125,7 +137,6 @@ impl TaskControlBlock {
                 memory_set,
                 parent: Some(Arc::downgrade(self)),
                 children: Vec::new(),
-                exit_code: 0,
             }),
         });
         // add child

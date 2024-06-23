@@ -79,17 +79,18 @@ pub fn run_tasks() {
     loop {
         let mut processor = PROCESSOR.exclusive_access();
         if let Some(task) = fetch_task() {
-            // info!("Processor: switch to task {}", task.pid.0);
             let idle_task_cx_ptr = processor.get_idle_task_cx_ptr();
+
             // access coming task TCB exclusively
             let mut task_inner = task.inner_exclusive_access();
             let next_task_cx_ptr = task_inner.get_task_cx_ptr();
             task_inner.task_status = TaskStatus::Running;
             // stop exclusively accessing coming task TCB manually
             drop(task_inner);
+
             processor.current = Some(task);
-            // stop exclusively accessing processor manually
             drop(processor);
+
             unsafe {
                 __switch(idle_task_cx_ptr, next_task_cx_ptr);
             }

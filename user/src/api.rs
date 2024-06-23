@@ -66,7 +66,7 @@ pub fn sleep(period_ms: usize) {
 
 // --------------- for user - kernel communication ----------------------
 
-const SHARED_PAGE: usize = 0x83000000;
+use crate::SHARED_PAGE;
 
 pub fn write_to_shared_page(index: usize, value: i32) {
     unsafe {

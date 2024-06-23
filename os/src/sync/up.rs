@@ -18,6 +18,19 @@ impl<T> UPSafeCell<T> {
 
     /// Panic if the data has been borrowed.
     pub fn exclusive_access(&self) -> RefMut<'_, T> {
-        self.inner.borrow_mut()
+        // self.inner.borrow_mut()
+        match self.inner.try_borrow_mut() {
+            Ok(borrow) => borrow,
+            Err(_) => {
+                panic!(
+                    "BorrowMutError: The type of T is {}",
+                    core::any::type_name::<T>()
+                );
+            }
+        }
+    }
+
+    pub fn try_borrow_mut(&self) -> Result<RefMut<'_, T>, core::cell::BorrowMutError> {
+        self.inner.try_borrow_mut()
     }
 }

@@ -17,6 +17,7 @@ use crate::heap::init_heap;
 pub use api::*;
 
 const USER_HEAP_SIZE: usize = 16384;
+const SHARED_PAGE: usize = 0x83000000;
 
 #[no_mangle]
 #[link_section = ".text.entry"]

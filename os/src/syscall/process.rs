@@ -1,9 +1,11 @@
 use crate::info;
 use crate::loader::get_app_data_by_name;
 use crate::mm::*;
+use crate::task::switch::check_wait_proc_manager;
 use crate::task::*;
 use crate::timer::get_time_ms;
 use alloc::sync::Arc;
+use switch::set_wait_proc_manager;
 
 /// task exits and submit an exit code
 pub fn sys_exit(exit_code: i32) -> ! {
@@ -14,7 +16,14 @@ pub fn sys_exit(exit_code: i32) -> ! {
 
 /// current task gives up resources for other tasks
 pub fn sys_yield() -> isize {
-    suspend_current_and_run_next();
+    if check_wait_proc_manager() {
+        // yeild from proc_manager, just run next (go back)
+        set_wait_proc_manager(false);
+        let mut _unused = TaskContext::empty();
+        schedule(&mut _unused as *mut _);
+    } else {
+        suspend_current_and_run_next();
+    }
     0
 }
 
@@ -61,7 +70,6 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
     let task = current_task().expect("no current task");
 
     // find a child process
-    // ---- access current TCB exclusively
     let mut inner = task.inner_exclusive_access();
     if inner
         .children
@@ -77,17 +85,21 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
     });
 
     if let Some((idx, _)) = pair {
+        // find zombie child process
         let child = inner.children.remove(idx);
         // confirm that child will be deallocated after removing from children list
         assert_eq!(Arc::strong_count(&child), 1);
         let found_pid = child.getpid();
-        // ++++ temporarily access child TCB exclusively
-        let exit_code = child.inner_exclusive_access().exit_code;
-        // ++++ stop exclusively accessing child PCB
+        drop(inner);
+
+        let exit_code = process::get_process_exit_code(found_pid).unwrap();
+
+        let inner = task.inner_exclusive_access();
+
+        // store exit code to user space
         *translated_refmut(inner.memory_set.satp_token(), exit_code_ptr) = exit_code;
         found_pid as isize
     } else {
         -2
     }
-    // ---- stop exclusively accessing current PCB automatically
 }

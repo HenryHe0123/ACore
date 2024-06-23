@@ -18,6 +18,7 @@ use riscv::register::{
     scause::{self, Exception, Interrupt, Trap},
     sip, stval, stvec,
 };
+use switch::check_wait_proc_manager;
 
 global_asm!(include_str!("trampoline.s"));
 
@@ -88,7 +89,11 @@ pub fn trap_handler() -> ! {
             // handle machine timer interrupt delegated from mtvec (timervec)
             let bits = sip::read().bits() & !2; // clear ssip
             unsafe { asm!("csrw sip, {ssip}", ssip = in(reg) bits) };
-            suspend_current_and_run_next();
+
+            // if waiting process manager, ignore timer interrupt
+            if !check_wait_proc_manager() {
+                suspend_current_and_run_next();
+            }
         }
         _ => {
             panic!(

@@ -2,7 +2,8 @@
 //!
 //! A simple FIFO scheduler.
 
-use super::TaskControlBlock;
+use super::{TaskControlBlock, PROC_MANAGER};
+use crate::task::switch::check_wait_proc_manager;
 use crate::UPSafeCell;
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
@@ -15,7 +16,15 @@ pub fn add_task(task: Arc<TaskControlBlock>) {
 
 /// Interface offered to pop the first task
 pub fn fetch_task() -> Option<Arc<TaskControlBlock>> {
-    TASK_MANAGER.exclusive_access().fetch()
+    if check_wait_proc_manager() {
+        Some(PROC_MANAGER.clone())
+    } else {
+        TASK_MANAGER.exclusive_access().fetch()
+    }
+}
+
+pub fn add_task_front(task: Arc<TaskControlBlock>) {
+    TASK_MANAGER.exclusive_access().add_front(task);
 }
 
 // implementation ---------------------------------------------------
@@ -38,6 +47,10 @@ impl TaskManager {
 
     fn fetch(&mut self) -> Option<Arc<TaskControlBlock>> {
         self.ready_queue.pop_front()
+    }
+
+    fn add_front(&mut self, task: Arc<TaskControlBlock>) {
+        self.ready_queue.push_front(task);
     }
 }
 

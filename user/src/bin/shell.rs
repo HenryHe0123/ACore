@@ -3,8 +3,6 @@
 #![allow(clippy::println_empty_string)]
 
 extern crate alloc;
-
-#[macro_use]
 extern crate user_lib;
 
 const LF: u8 = 0x0au8; // Line Feed
@@ -15,16 +13,25 @@ const CC: u8 = 3; // Ctrl+C
 
 use alloc::string::String;
 use user_lib::console::getchar;
-use user_lib::{exec, fork, waitpid};
+use user_lib::*;
 
 fn print_prompt() {
     let prompt = "\x1b[32mhenryhe@ACore\x1b[0m:\x1b[34m~\x1b[0m$ ";
     print!("{}", prompt);
 }
 
+fn check_permission(name: &str) -> bool {
+    if name == "proc_manager\0" || name == "initproc\0" || name == "shell\0" {
+        println!("Shell: Permission denied!");
+        return false;
+    }
+    true
+}
+
 #[no_mangle]
 pub fn main() -> i32 {
     println!("Welcome to Shell!"); // Print welcome message
+    println!("Shell pid = {}", getpid()); // Print the PID of the shell process
     let mut line: String = String::new(); // Initialize an empty string to store user input
     print_prompt();
 
@@ -36,21 +43,24 @@ pub fn main() -> i32 {
                 println!(""); // Print a newline (echo the newline)
                 if !line.is_empty() {
                     line.push('\0'); // Add a null terminator to the string (C-style string)
-                    let pid = fork(); // Create a child process
-                    if pid == 0 {
-                        // In the child process
-                        if exec(line.as_str()) == -1 {
-                            println!("Shell: Error when executing {}!", line); // Print error if execution fails
-                            return -4; // Return error code
+
+                    if check_permission(line.as_str()) {
+                        let pid = fork(); // Create a child process
+                        if pid == 0 {
+                            // In the child process
+                            if exec(line.as_str()) == -1 {
+                                println!("Shell: Error when executing {}!", line); // Print error if execution fails
+                                return -4; // Return error code
+                            }
+                            unreachable!();
+                        } else {
+                            // In the parent process
+                            let mut exit_code: i32 = 0;
+                            let exit_pid = waitpid(pid as usize, &mut exit_code); // Wait for the child process to finish
+                            assert!(pid == exit_pid, "waitpid error"); // Ensure the process waited for is the correct child process
+                            println!("Shell: Process {} exited with code {}", pid, exit_code);
+                            // Print the exit code of the child process
                         }
-                        unreachable!();
-                    } else {
-                        // In the parent process
-                        let mut exit_code: i32 = 0;
-                        let exit_pid = waitpid(pid as usize, &mut exit_code); // Wait for the child process to finish
-                        assert!(pid == exit_pid, "waitpid error"); // Ensure the process waited for is the correct child process
-                        println!("Shell: Process {} exited with code {}", pid, exit_code);
-                        // Print the exit code of the child process
                     }
                     line.clear(); // Clear the input line
                 }
