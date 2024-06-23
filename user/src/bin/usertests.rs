@@ -87,7 +87,7 @@ pub fn main() -> i32 {
     let err_num = run_tests(FAIL_TESTS);
     if succ_num == SUCC_TESTS.len() as i32 && err_num == FAIL_TESTS.len() as i32 {
         println!(
-            "{} of sueecssed apps, {} of failed apps run correctly. \nUsertests passed!",
+            "{} of successed apps, {} of failed apps run correctly. \nUsertests passed!",
             SUCC_TESTS.len(),
             FAIL_TESTS.len()
         );
@@ -95,14 +95,14 @@ pub fn main() -> i32 {
     }
     if succ_num != SUCC_TESTS.len() as i32 {
         println!(
-            "all successed app_num is  {} , but only  passed {}",
+            "all successed app_num is {} , but only passed {}",
             SUCC_TESTS.len(),
             succ_num
         );
     }
     if err_num != FAIL_TESTS.len() as i32 {
         println!(
-            "all failed app_num is  {} , but only  passed {}",
+            "all failed app_num is {} , but only passed {}",
             FAIL_TESTS.len(),
             err_num
         );

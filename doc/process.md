@@ -1,6 +1,6 @@
 # Process Management
 
-### Process Control Block
+### Process Control Block (U)
 
 - pid
 - status
@@ -8,7 +8,7 @@
 - children
 - exit code
 
-### Task Control Block
+### Task Control Block (S)
 
 - pid
 - kernel stack
