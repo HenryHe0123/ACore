@@ -2,7 +2,6 @@ use crate::config::kernel_stack_position;
 use crate::mm::address::VirtAddr;
 use crate::mm::map_area::MapPermission;
 use crate::mm::KERNEL_SPACE;
-use crate::task::pid::Pid;
 
 /// Kernel stack for app
 pub struct KernelStack {
@@ -11,8 +10,8 @@ pub struct KernelStack {
 
 impl KernelStack {
     /// Create a kernel stack from pid
-    pub fn new(pid: &Pid) -> Self {
-        let pid = pid.0;
+    pub fn new(pid: usize) -> Self {
+        // let pid = pid.0;
         let (kernel_stack_bottom, kernel_stack_top) = kernel_stack_position(pid);
         KERNEL_SPACE.exclusive_access().insert_empty_framed_area(
             kernel_stack_bottom.into(),

@@ -1,11 +1,11 @@
 use crate::info;
 use crate::loader::get_app_data_by_name;
 use crate::mm::*;
-use crate::task::switch::check_wait_proc_manager;
+use crate::task::switch::check_proc_manager_service;
 use crate::task::*;
 use crate::timer::get_time_ms;
 use alloc::sync::Arc;
-use switch::set_wait_proc_manager;
+use switch::set_proc_manager_service_off;
 
 /// task exits and submit an exit code
 pub fn sys_exit(exit_code: i32) -> ! {
@@ -16,9 +16,9 @@ pub fn sys_exit(exit_code: i32) -> ! {
 
 /// current task gives up resources for other tasks
 pub fn sys_yield() -> isize {
-    if check_wait_proc_manager() {
+    if check_proc_manager_service() {
         // yeild from proc_manager, just run next (go back)
-        set_wait_proc_manager(false);
+        set_proc_manager_service_off();
         let mut _unused = TaskContext::empty();
         schedule(&mut _unused as *mut _);
     } else {
@@ -33,13 +33,13 @@ pub fn sys_time() -> isize {
 }
 
 pub fn sys_getpid() -> isize {
-    current_task().unwrap().pid.0 as isize
+    current_task().unwrap().pid as isize
 }
 
 pub fn sys_fork() -> isize {
     let current_task = current_task().unwrap();
     let new_task = current_task.fork(); // child process
-    let new_pid = new_task.pid.0;
+    let new_pid = new_task.pid;
 
     // for child process, fork returns 0 to u-mode when it's scheduled
     // so modify trap context of new_task, it will not go back to trap_return
@@ -92,7 +92,7 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
         let found_pid = child.getpid();
         drop(inner);
 
-        let exit_code = process::get_process_exit_code(found_pid).unwrap();
+        let exit_code = service::get_process_exit_code(found_pid).unwrap();
 
         let inner = task.inner_exclusive_access();
 

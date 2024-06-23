@@ -13,12 +13,20 @@ extern "C" {
 
 static mut WAIT_PROC_MANAGER: bool = false;
 
-pub fn check_wait_proc_manager() -> bool {
-    unsafe { WAIT_PROC_MANAGER }
-}
-
-pub fn set_wait_proc_manager(wait: bool) {
+fn set_proc_manager_service(wait: bool) {
     unsafe {
         WAIT_PROC_MANAGER = wait;
     }
+}
+
+pub fn check_proc_manager_service() -> bool {
+    unsafe { WAIT_PROC_MANAGER }
+}
+
+pub fn set_proc_manager_service_on() {
+    set_proc_manager_service(true);
+}
+
+pub fn set_proc_manager_service_off() {
+    set_proc_manager_service(false);
 }

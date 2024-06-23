@@ -1,8 +1,7 @@
 mod context;
 mod kernel_stack;
 mod manager;
-mod pid;
-pub mod process;
+pub mod service;
 mod processor;
 pub mod switch;
 mod task;
@@ -13,15 +12,17 @@ pub use context::TaskContext;
 use lazy_static::lazy_static;
 pub use manager::*;
 pub use processor::*;
-use switch::check_wait_proc_manager;
+use switch::check_proc_manager_service;
 use task::*;
 
 lazy_static! {
     pub static ref INITPROC: Arc<TaskControlBlock> = Arc::new(TaskControlBlock::new(
-        get_app_data_by_name("initproc").unwrap()
+        get_app_data_by_name("initproc").unwrap(),
+        1
     ));
     pub static ref PROC_MANAGER: Arc<TaskControlBlock> = Arc::new(TaskControlBlock::new(
-        get_app_data_by_name("proc_manager").unwrap()
+        get_app_data_by_name("proc_manager").unwrap(),
+        2
     ));
 }
 
@@ -40,7 +41,7 @@ pub fn suspend_current_and_run_next() {
     current_inner.task_status = TaskStatus::Ready;
     drop(current_inner);
 
-    if check_wait_proc_manager() {
+    if check_proc_manager_service() {
         add_task_front(current_task);
         // crate::debug!("enter suspend_current_and_run_next: wait proc manager");
     } else {
@@ -59,7 +60,7 @@ pub fn exit_current_and_run_next(exit_code: i32) {
     let current_task = current_task().expect("no current task");
     let pid = current_task.getpid();
     drop(current_task);
-    process::exit_process(pid, exit_code);
+    service::exit_process(pid, exit_code);
 
     // take current task from Processor
     let current_task = take_current_task().expect("no current task");

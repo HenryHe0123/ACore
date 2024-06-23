@@ -4,7 +4,7 @@ use crate::mm::address::*;
 use crate::mm::memory_set::MemorySet;
 use crate::mm::KERNEL_SPACE;
 use crate::task::kernel_stack::KernelStack;
-use crate::task::pid::*;
+use crate::task::service;
 use crate::trap::*;
 use crate::UPSafeCell;
 use alloc::sync::Arc;
@@ -21,7 +21,7 @@ pub enum TaskStatus {
 
 pub struct TaskControlBlock {
     // immutable
-    pub pid: Pid,
+    pub pid: usize,
     pub kernel_stack: KernelStack,
     // mutable
     inner: UPSafeCell<TaskControlBlockInner>,
@@ -34,7 +34,7 @@ impl TaskControlBlock {
                 drop(task_inner);
             }
             Err(_) => {
-                panic!("TCB inner is already borrowed for pid {}!", self.pid.0);
+                panic!("TCB inner is already borrowed for pid {}!", self.pid);
             }
         }
         self.inner.exclusive_access()
@@ -47,10 +47,10 @@ impl TaskControlBlock {
     }
 
     pub fn getpid(&self) -> usize {
-        self.pid.0
+        self.pid
     }
 
-    pub fn new(elf_data: &[u8]) -> Self {
+    pub fn new(elf_data: &[u8], pre_alloc_pid: usize) -> Self {
         // 从elf文件中解析出内存布局
         let (memory_set, user_sp, entry_point) = MemorySet::new_from_elf(elf_data);
         // 获取trap_context的物理页号
@@ -58,8 +58,14 @@ impl TaskControlBlock {
             .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();
         // 分配 pid 和 kernel stack
-        let pid = pid_alloc();
-        let kernel_stack = KernelStack::new(&pid);
+
+        let pid = if pre_alloc_pid == 0 {
+            service::create_new_process()
+        } else {
+            pre_alloc_pid
+        };
+
+        let kernel_stack = KernelStack::new(pid);
         let kernel_stack_top = kernel_stack.get_top();
         // push a task context which goes to trap_return to the top of kernel stack
         let task_control_block = Self {
@@ -117,15 +123,19 @@ impl TaskControlBlockInner {
 impl TaskControlBlock {
     pub fn fork(self: &Arc<TaskControlBlock>) -> Arc<TaskControlBlock> {
         // ---- access parent PCB exclusively
-        let mut parent_inner = self.inner_exclusive_access();
+        let parent_inner = self.inner_exclusive_access();
         // copy user space (include trap context)
         let memory_set = MemorySet::from_existed_user(&parent_inner.memory_set);
         let trap_cx_ppn = memory_set
             .translate_to_ppn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();
+        
         // alloc a pid and a kernel stack in kernel space
-        let pid_handle = pid_alloc();
-        let kernel_stack = KernelStack::new(&pid_handle);
+        drop(parent_inner);
+        let pid_handle = service::create_new_process();
+        let mut parent_inner = self.inner_exclusive_access();
+
+        let kernel_stack = KernelStack::new(pid_handle);
         let kernel_stack_top = kernel_stack.get_top();
         let new_tcb = Arc::new(TaskControlBlock {
             pid: pid_handle,

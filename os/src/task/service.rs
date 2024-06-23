@@ -1,17 +1,18 @@
 use crate::config::*;
 
 use crate::task::suspend_current_and_run_next;
-use crate::task::switch::set_wait_proc_manager;
+use crate::task::switch::set_proc_manager_service_on;
 
 // debug: remember to drop execlusive access before switch to proc manager
 pub fn switch_to_proc_manager() {
     // crate::debug!("switch_to_proc_manager");
-    set_wait_proc_manager(true);
+    set_proc_manager_service_on();
     suspend_current_and_run_next();
 }
 
 const EXIT: i32 = 1;
 const GET_EXIT_CODE: i32 = 2;
+const CREATE: i32 = 3;
 
 pub fn exit_process(pid: usize, exit_code: i32) {
     // crate::debug!("exit_process: pid = {}, exit_code = {}", pid, exit_code);
@@ -33,4 +34,13 @@ pub fn get_process_exit_code(pid: usize) -> Option<i32> {
     } else {
         Some(exit_code)
     }
+}
+
+pub fn create_new_process() -> usize {
+    // crate::debug!("create_new_process");
+    write_to_shared_page(0, CREATE);
+    switch_to_proc_manager();
+
+    let new_pid = read_from_shared_page(1);
+    new_pid as usize
 }

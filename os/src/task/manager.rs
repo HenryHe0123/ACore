@@ -3,7 +3,7 @@
 //! A simple FIFO scheduler.
 
 use super::{TaskControlBlock, PROC_MANAGER};
-use crate::task::switch::check_wait_proc_manager;
+use crate::task::switch::check_proc_manager_service;
 use crate::UPSafeCell;
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
@@ -16,7 +16,7 @@ pub fn add_task(task: Arc<TaskControlBlock>) {
 
 /// Interface offered to pop the first task
 pub fn fetch_task() -> Option<Arc<TaskControlBlock>> {
-    if check_wait_proc_manager() {
+    if check_proc_manager_service() {
         Some(PROC_MANAGER.clone())
     } else {
         TASK_MANAGER.exclusive_access().fetch()

@@ -1,4 +1,4 @@
-use crate::UPSafeCell;
+use crate::up::UPSafeCell;
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 
