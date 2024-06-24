@@ -10,13 +10,18 @@ const CR: u8 = 0x0du8; // Carriage Return
 const DL: u8 = 0x7fu8; // Delete
 const BS: u8 = 0x08u8; // Backspace
 const CC: u8 = 3; // Ctrl+C
+const ROOT: bool = true;
 
 use alloc::string::String;
 use user_lib::console::getchar;
 use user_lib::*;
 
 fn print_prompt() {
-    let prompt = "\x1b[32mhenryhe@ACore\x1b[0m:\x1b[34m~\x1b[0m$ ";
+    let prompt = if ROOT {
+        "root@ACore:/# "
+    } else {
+        "\x1b[32mhenryhe@ACore\x1b[0m:\x1b[34m~\x1b[0m$ "
+    };
     print!("{}", prompt);
 }
 
@@ -36,7 +41,7 @@ fn check_permission(name: &str) -> bool {
 #[no_mangle]
 pub fn main() -> i32 {
     println!("Welcome to Shell!"); // Print welcome message
-    // println!("Shell pid = {}", getpid()); // Print the PID of the shell process
+                                   // println!("Shell pid = {}", getpid()); // Print the PID of the shell process
     let mut line: String = String::new(); // Initialize an empty string to store user input
     print_prompt();
 

@@ -59,7 +59,7 @@ Then you can see the initial output of the OS:
 [initproc] Start running.
 [process manager] Start running.
 Welcome to Shell!
-henryhe@ACore:~$
+root@ACore:/# 
 ```
 
 The supported applications are listed above. You can use the built-in `ls` command to display them again. To run an application, just type its name and press Enter. `usertests` can run a bunch of applications, thus it is recommended.
